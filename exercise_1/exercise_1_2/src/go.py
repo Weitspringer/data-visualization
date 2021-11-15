@@ -1,6 +1,5 @@
 import re
 import csv
-import itertools
 
 
 LABELS = ["PIN", "name", "ICC", "Club", "Grade", "Tournament", "Nw", "Ng", "IGoR", "FGoR"]
@@ -12,19 +11,32 @@ ENCODING = "utf-8"
 def convert_hst_to_csv():
     f = open(PATH_TO_DATA + "all.hst", "r", encoding=ENCODING)
     csv = open(PATH_TO_DATA + "all.csv", "w", encoding=ENCODING)
-    lines = f.readlines()
+    csv.seek(0)
+    csv.truncate()
+    lines = list(filter(lambda a: len(a) != 1, f.readlines()))
     for line in lines:
         splitted_line = list(filter(lambda a: a != "", re.split('\\s+', line)))
         if lines.index(line) == 0 or len(splitted_line) == 0:
             continue
         if len(splitted_line) == 11:
+            i = 0
             for entry in splitted_line:
-                if splitted_line.index(entry) != len(splitted_line) - 1:
+                if i != len(splitted_line) - 1 and i != 1:
+                    csv.write(entry + SEPARATOR)
+                elif i == 1:
+                    csv.write(entry + ' ')
+                else:
+                    csv.write(entry)
+                i += 1
+            csv.write("\n")
+        elif len(splitted_line) == 10: # In this case, the player name consists of a single string
+            i = 0
+            for entry in splitted_line:
+                if i != len(splitted_line) - 1:
                     csv.write(entry + SEPARATOR)
                 else:
                     csv.write(entry + "\n")
-        else:
-            print("Line too long") # Observation: The name is only consisting of 1 word
+                i += 1
 
 
 def read_csv():
@@ -44,6 +56,5 @@ def read_csv():
 
 
 if __name__ == "__main__":
-    convert_hst_to_csv()
     pl = read_csv()
     print(pl[1])
