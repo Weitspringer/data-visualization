@@ -1,0 +1,21 @@
+1) Developers of new methods have to make clear why the needed information
+cannot be extracted automatically and why the new method is better than existing methods.
+Additionally, one has to take into account the context of the visualization and determine
+if the visualization enables users to extract the relevant information from the data.
+
+2) Negative knowledge can be produced if the visualization is wrong or misleading. 
+The author explains this in the paper with an example where aliases lead to a wrong 
+conclusion. Positive knowledge denotes a positive amount of knowledge gained from
+the visualization (the visualization is correct and not misleading).
+
+3) Based on the economic model proposed in section 3, a visualization is cnosidered to be
+successful if it is "used by many people, who use it routinely to obtain highly valuable
+knowledge, without having to spend time and money on hardware, software, and effort." 
+[Wijk, p.423]. The model assumes a homogenous user community.
+
+4) It is not directly measurable how much insight is acquired 
+and the value of insight is difficult to assess.
+
+5) The author proposes the aims for more generic insights at all levels:
+Analyzing and categorizing methods (descriptive approach), evaluate and validate the methods,
+propose models and laws (generic results), and further study methodological issues.
