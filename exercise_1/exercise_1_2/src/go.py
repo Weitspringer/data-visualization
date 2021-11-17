@@ -1,5 +1,7 @@
 import re
 import csv
+import matplotlib.pyplot as plt
+import numpy as np
 
 
 LABELS = ["PIN", "name", "ICC", "Club", "Grade", "Tournament", "Nw", "Ng", "IGoR", "FGoR"]
@@ -55,6 +57,31 @@ def read_csv():
     return parsed_lines
 
 
+def get_data_for_player(table, player_name):
+    return list(filter(lambda line: line.get(LABELS[1]) == player_name, table))
+
+
+def extract_tournament_dates(table):
+    dates = []
+    date_regex = re.compile("\d+")
+    for entry in table:
+        dates.append(date_regex.search(entry.get(LABELS[5])).group())
+    return dates
+
+
+def get_gor_values(table):
+    gors = []
+    for entry in table:
+        gors.append(int(entry.get(LABELS[9])) - int(entry.get(LABELS[8])))
+    return gors
+
+
 if __name__ == "__main__":
     pl = read_csv()
-    print(pl[1])
+    pl_filtered = get_data_for_player(pl, 'Cech Tim')
+    dates = extract_tournament_dates(pl_filtered)
+    gors = get_gor_values(pl_filtered)
+
+    fig, ax = plt.subplots()
+    ax.stem(dates, gors)
+    plt.show()
