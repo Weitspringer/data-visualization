@@ -70,18 +70,29 @@ def extract_tournament_dates(table):
 
 
 def get_gor_values(table):
-    gors = []
+    gors_before = []
+    gors_after = []
     for entry in table:
-        gors.append(int(entry.get(LABELS[9])) - int(entry.get(LABELS[8])))
-    return gors
+        gors_before.append(int(entry.get(LABELS[8])))
+        gors_after.append(int(entry.get(LABELS[9])))
+    return gors_before, gors_after
 
 
 if __name__ == "__main__":
     pl = read_csv()
     pl_filtered = get_data_for_player(pl, 'Cech Tim')
     dates = extract_tournament_dates(pl_filtered)
-    gors = get_gor_values(pl_filtered)
+    gors_before, gors_after = get_gor_values(pl_filtered)
+
+    gors = []
+    double_dates = []
+    for i in gors_before:
+        gors.append(i)
+        gors.append(gors_after[gors_before.index(i)])
+    for d in dates:
+        double_dates.append(d)
+        double_dates.append(d)
 
     fig, ax = plt.subplots()
-    ax.stem(dates, gors)
+    ax.plot(double_dates, gors)
     plt.show()
