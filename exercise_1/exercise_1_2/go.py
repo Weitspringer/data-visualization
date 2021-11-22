@@ -1,13 +1,11 @@
 import re
 import csv
 import matplotlib.pyplot as plt
-import numpy as np
-import datetime
 
 
 LABELS = ["PIN", "name", "ICC", "Club", "Grade", "Tournament", "Nw", "Ng", "IGoR", "FGoR"]
 SEPARATOR = ","
-PATH_TO_DATA = "exercise_1/exercise_1_2/data/"
+PATH_TO_DATA = "data/"
 ENCODING = "utf-8"
 
 
