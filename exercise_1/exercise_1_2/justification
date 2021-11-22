@@ -1,0 +1,3 @@
+Progress in a tournament is interpolated as a straight vertical line (after -> before, value changes instantly). 
+Progress in between tournaments is interpolated linear because there is no additional information 
+about why the initial value at the beginning of a tournament is higher/lower than the result of the previous tournament.

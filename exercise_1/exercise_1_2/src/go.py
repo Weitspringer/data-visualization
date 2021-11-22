@@ -2,6 +2,7 @@ import re
 import csv
 import matplotlib.pyplot as plt
 import numpy as np
+import datetime
 
 
 LABELS = ["PIN", "name", "ICC", "Club", "Grade", "Tournament", "Nw", "Ng", "IGoR", "FGoR"]
@@ -65,7 +66,7 @@ def extract_tournament_dates(table):
     dates = []
     date_regex = re.compile("\d+")
     for entry in table:
-        dates.append(date_regex.search(entry.get(LABELS[5])).group())
+        dates.append(int(date_regex.search(entry.get(LABELS[5])).group()))
     return dates
 
 
@@ -95,4 +96,8 @@ if __name__ == "__main__":
 
     fig, ax = plt.subplots()
     ax.plot(double_dates, gors)
+    plt.xticks(ticks=[130000, 140000, 150000, 160000, 170000, 180000, 190000, 200000, 210000], labels=[2013, 2014, 2015, 2016, 2017, 2018, 2019, 2020, 2021])
+    plt.xlabel("Year")
+    plt.ylabel("GoR value")
+    plt.grid(color='gray', linestyle='-', alpha=0.3)
     plt.show()
