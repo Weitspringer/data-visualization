@@ -5,8 +5,134 @@
     <script src="https://d3js.org/d3.v5.min.js"></script>
   </head>
   <body>
-    <svg id="canvas" width="500" height="500"></svg>
+    <svg id="canvas" width="1440" height="500"></svg>
   </body>
   <script>
+    // Margins
+    var margin = { top: 50, right: 50, bottom: 50, left: 100 },
+      width = 1440 - margin.left - margin.right,
+      height = 500 - margin.top - margin.bottom;
+
+    var cap_colormap_positive = 100;
+    var cap_colormap_negative = 100;
+
+    // Colormap for continents
+    function colormap_annual_return(annual_return) {
+      if (annual_return >= 0) {
+        if (annual_return < cap_colormap_positive) {
+          // [0.5, 1)
+          return d3.interpolateRdYlGn(
+            annual_return / (2 * cap_colormap_positive) + 0.5
+          );
+        } else {
+          // [1]
+          return d3.interpolateRdYlGn(1);
+        }
+      } else {
+        if (Math.abs(annual_return) < cap_colormap_negative) {
+          // (0, 0.5)
+          return d3.interpolateRdYlGn(
+            (annual_return + cap_colormap_negative) /
+              (2 * cap_colormap_negative)
+          );
+        } else {
+          // [0]
+          return d3.interpolateRdYlGn(0);
+        }
+      }
+    }
+
+    var svg = d3
+      .select("#canvas")
+      .append("svg")
+      .attr("width", width + margin.left + margin.right)
+      .attr("height", height + margin.top + margin.bottom)
+      .append("g")
+      .attr("transform", "translate(" + margin.left + "," + margin.top + ")");
+
+    var rect_height = 20;
+    var rect_width = 60;
+    var text_offset_y_axis = 35;
+    var text_offset_x_axis = 25;
+    var title_offset = 20;
+
+    d3.csv("/data/AXP.csv").then(function (data) {
+      buy_years = [];
+      sell_years = [];
+      performances = [];
+
+      data.map(function (d) {
+        buy_years.push(d["buy"]);
+        sell_years.push(d["sell"]);
+        performances.push(d["performance"]);
+      });
+
+      for (buy_year in buy_years) {
+        var last_y;
+        for (sell_year in sell_years) {
+          diff_year =
+            parseInt(sell_years[sell_year]) - parseInt(buy_years[buy_year]);
+          if (diff_year > 0) {
+            offset = parseInt(buy_year);
+            acc = 1;
+            for (i = 0; i < diff_year; i++) {
+              acc = acc * (1 + performances[i + offset] / 100);
+            }
+            geometric_mean = (Math.cbrt(acc) - 1) * 100;
+            svg
+              .append("rect")
+              .attr("y", rect_height * parseInt(sell_year) + title_offset)
+              .attr("x", text_offset_y_axis + rect_width * parseInt(buy_year))
+              .attr("width", rect_width)
+              .attr("height", rect_height)
+              .style(
+                "fill",
+                colormap_annual_return((Math.cbrt(acc) - 1) * 100)
+              );
+            svg
+              .append("text")
+              .attr("y", rect_height * parseInt(sell_year) + 15 + title_offset)
+              .attr(
+                "x",
+                text_offset_y_axis +
+                  rect_width * parseInt(buy_year) +
+                  rect_width / 2
+              )
+              .style("text-anchor", "middle")
+              .text(geometric_mean.toFixed(1))
+              .style("font-family", "sans-serif");
+            svg
+              .append("text")
+              .attr("y", rect_height * parseInt(sell_year) + 15 + title_offset)
+              .attr("x", 0)
+              .style("text-anchor", "middle")
+              .text(sell_years[sell_year])
+              .style("font-family", "sans-serif");
+            last_y = rect_height * parseInt(sell_year) + 15;
+          }
+        }
+        svg
+          .append("text")
+          .attr("y", last_y + text_offset_x_axis + title_offset)
+          .attr(
+            "x",
+            text_offset_y_axis +
+              rect_width * parseInt(buy_year) +
+              rect_width / 2
+          )
+          .style("text-anchor", "middle")
+          .text(buy_years[buy_year])
+          .style("font-family", "sans-serif");
+        svg
+          .append("text")
+          .attr("y", 0)
+          .attr("x", width / 2)
+          .style("text-anchor", "middle")
+          .text("American Express Company Renditedreieck")
+          .style("font-family", "sans-serif")
+          .style("font-size", "20px")
+          .style("font-weight", "bold");
+      }
+    });
   </script>
 </html>
