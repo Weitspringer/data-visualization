@@ -5,8 +5,136 @@
     <script src="https://d3js.org/d3.v5.min.js"></script>
   </head>
   <body>
-    <svg id="canvas" width="500" height="500"></svg>
+    <svg id="canvas" width="1000" height="1000"></svg>
   </body>
   <script>
+    // set the dimensions and margins of the graph
+    var margin = { top: 50, right: 50, bottom: 50, left: 100 },
+      width = 800 - margin.left - margin.right,
+      height = 500 - margin.top - margin.bottom;
+
+    var continent_colormap = {
+      Europe: "#FFCA3A",
+      Oceania: "#6CCFF6",
+      Africa: "#D74E09",
+      "North America": "#8AC926",
+      "South America": "#C113F6",
+      Asia: "#0A2342",
+    };
+
+    // append the svg object to the body of the page
+    var svg = d3
+      .select("#canvas")
+      .append("svg")
+      .attr("width", width + margin.left + margin.right)
+      .attr("height", height + margin.top + margin.bottom)
+      .append("g")
+      .attr("transform", "translate(" + margin.left + "," + margin.top + ")");
+
+    //Read the data
+    d3.csv("/data/UnRegionsGdp.csv").then(function (data) {
+      filtered_data = data.filter(function (d, i) {
+        if (d["HDI_2017"] > 0 && d["GDP_2017"] > 0) {
+          return d;
+        }
+      });
+      // Add X axis
+      var x = d3
+        .scaleLinear()
+        .domain([0, d3.max(filtered_data, (d) => Math.max(d.HDI_2017))])
+        .range([0, width]);
+      svg
+        .append("g")
+        .attr("transform", "translate(0," + height + ")")
+        .call(d3.axisBottom(x));
+
+      // Add Y axis
+      var y = d3
+        .scaleLog()
+        .domain([
+          d3.min(filtered_data, (d) => Math.max(d.GDP_2017)),
+          d3.max(filtered_data, (d) => Math.max(d.GDP_2017)),
+        ])
+        .range([height, 1]);
+      svg.append("g").call(d3.axisLeft(y));
+
+      svg
+        .append("text")
+        .attr("x", width / 2)
+        .attr("y", height + margin.bottom)
+        .style("text-anchor", "middle")
+        .text("Human Development Index (HDI)");
+
+      svg
+        .append("text")
+        .attr("transform", "rotate(-90)")
+        .attr("y", 0 - 45)
+        .attr("x", 0 - height / 2)
+        .style("text-anchor", "middle")
+        .text("Annual GDP per capita (USD)");
+
+      // Add dots
+      svg
+        .append("g")
+        .selectAll("dot")
+        .data(filtered_data)
+        .enter()
+        .append("circle")
+        .attr("cx", function (d) {
+          return x(d.HDI_2017);
+        })
+        .attr("cy", function (d) {
+          return y(d.GDP_2017);
+        })
+        .attr("r", 2.5)
+        .style("fill", function (d) {
+          return continent_colormap[d.Continent];
+        });
+    });
+
+    var legend = d3
+      .select("#canvas")
+      .append("svg")
+      .attr("width", width + margin.left + margin.right)
+      .attr("height", height + margin.top + margin.bottom)
+      .append("g")
+      .attr("transform", "translate(" + margin.left + "," + margin.top + ")");
+
+    // Usually you have a color scale in your chart already
+    var color = d3.scaleOrdinal().domain(Object.keys(continent_colormap)).range(d3.schemeSet1);
+
+    // Add one rectangle in the legend for each continent
+    var size = 20;
+    legend.selectAll("rect")
+      .data(Object.keys(continent_colormap))
+      .enter()
+      .append("rect")
+      .attr("x", 50)
+      .attr("y", function (d, i) {
+        return 0 + i * (size + 5);
+      })
+      .attr("width", 50)
+      .attr("height", size)
+      .style("fill", function (d) {
+        return continent_colormap[d];
+      });
+
+    // Add one dot in the legend for each continent.
+    legend.selectAll("labels")
+      .data(Object.keys(continent_colormap))
+      .enter()
+      .append("text")
+      .attr("x", 50 + 50 * 1.2)
+      .attr("y", function (d, i) {
+        return 0 + i * (size + 5) + size / 2;
+      })
+      .style("fill", function (d) {
+        return continent_colormap[d];
+      })
+      .text(function (d) {
+        return d;
+      })
+      .attr("text-anchor", "left")
+      .style("alignment-baseline", "middle");
   </script>
 </html>
