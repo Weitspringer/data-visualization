@@ -8,11 +8,12 @@
     <svg id="canvas" width="1000" height="1000"></svg>
   </body>
   <script>
-    // set the dimensions and margins of the graph
+    // Margins
     var margin = { top: 50, right: 50, bottom: 50, left: 100 },
       width = 900 - margin.left - margin.right,
       height = 600 - margin.top - margin.bottom;
 
+    // Colormap for continents
     var continent_colormap = {
       Europe: "#FFCA3A",
       Oceania: "#6CCFF6",
@@ -22,7 +23,6 @@
       Asia: "#0A2342",
     };
 
-    // append the svg object to the body of the page
     var svg = d3
       .select("#canvas")
       .append("svg")
@@ -31,14 +31,14 @@
       .append("g")
       .attr("transform", "translate(" + margin.left + "," + margin.top + ")");
 
-    //Read the data
+    // Read csv file, filter data and create categorized plot
     d3.csv("/data/UnRegionsGdp.csv").then(function (data) {
       filtered_data = data.filter(function (d, i) {
         if (d["HDI_2017"] > 0 && d["GDP_2017"] > 0) {
           return d;
         }
       });
-      // Add X axis
+      // Linear scale x axis for HDI
       var x = d3
         .scaleLinear()
         .domain([0, d3.max(filtered_data, (d) => Math.max(d.HDI_2017))])
@@ -48,7 +48,7 @@
         .attr("transform", "translate(0," + height + ")")
         .call(d3.axisBottom(x));
 
-      // Add Y axis
+      // Logarithmic scale y axis for GDP
       var y = d3
         .scaleLog()
         .domain([
@@ -58,6 +58,7 @@
         .range([height, 1]);
       svg.append("g").call(d3.axisLeft(y));
 
+      // Append the axis labels
       svg
         .append("text")
         .attr("x", width / 2)
@@ -75,7 +76,7 @@
         .text("Annual GDP per capita (USD)")
         .style("font-family", "sans-serif");
 
-      // Add dots
+      // Add data points
       svg
         .append("g")
         .selectAll("dot")
@@ -103,32 +104,38 @@
       .attr("transform", "translate(" + margin.left + "," + margin.top + ")");
 
     // Usually you have a color scale in your chart already
-    var color = d3.scaleOrdinal().domain(Object.keys(continent_colormap)).range(d3.schemeSet1);
+    var color = d3
+      .scaleOrdinal()
+      .domain(Object.keys(continent_colormap))
+      .range(d3.schemeSet1);
 
     // Add one rectangle in the legend for each continent
-    var size = 20;
-    legend.selectAll("rect")
+    var legend_bar_height = 20;
+    var legend_bar_width = 60;
+    legend
+      .selectAll("rect")
       .data(Object.keys(continent_colormap))
       .enter()
       .append("rect")
-      .attr("x", 50)
+      .attr("x", legend_bar_width)
       .attr("y", function (d, i) {
-        return 0 + i * (size + 5);
+        return 0 + i * (legend_bar_height + 5);
       })
-      .attr("width", 50)
-      .attr("height", size)
+      .attr("width", legend_bar_width)
+      .attr("height", legend_bar_height)
       .style("fill", function (d) {
         return continent_colormap[d];
       });
 
     // Add one dot in the legend for each continent.
-    legend.selectAll("labels")
+    legend
+      .selectAll("labels")
       .data(Object.keys(continent_colormap))
       .enter()
       .append("text")
-      .attr("x", 50 + 50 * 1.2)
+      .attr("x", legend_bar_width * 2.2)
       .attr("y", function (d, i) {
-        return 0 + i * (size + 5) + size / 2;
+        return 0 + i * (legend_bar_height + 5) + legend_bar_height / 2 + 5;
       })
       .style("fill", function (d) {
         return continent_colormap[d];
