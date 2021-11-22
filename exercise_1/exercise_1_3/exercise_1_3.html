@@ -32,7 +32,7 @@
       .attr("transform", "translate(" + margin.left + "," + margin.top + ")");
 
     // Read csv file, filter data and create categorized plot
-    d3.csv("/data/UnRegionsGdp.csv").then(function (data) {
+    d3.csv("/exercise_1_3/data/UnRegionsGdp.csv").then(function (data) {
       filtered_data = data.filter(function (d, i) {
         if (d["HDI_2017"] > 0 && d["GDP_2017"] > 0) {
           return d;

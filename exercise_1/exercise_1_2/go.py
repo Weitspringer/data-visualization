@@ -5,7 +5,7 @@ import matplotlib.pyplot as plt
 
 LABELS = ["PIN", "name", "ICC", "Club", "Grade", "Tournament", "Nw", "Ng", "IGoR", "FGoR"]
 SEPARATOR = ","
-PATH_TO_DATA = "data/"
+PATH_TO_DATA = "exercise_1_2/data/"
 ENCODING = "utf-8"
 
 
