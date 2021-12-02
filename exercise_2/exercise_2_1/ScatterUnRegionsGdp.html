@@ -30,7 +30,18 @@
     </style>
   </head>
   <body>
-    <svg width="100%" height="100%" viewBox="0 0 500 300"></svg>
+    <div
+      width="100%"
+      height="100%"
+      viewBox="0 0 500 300"
+      id="content"
+      class="row"
+    >
+      <div id="content-svg">
+        <svg width="100%" height="100%" viewBox="0 0 500 300"></svg>
+      </div>
+      <div id="filter"></div>
+    </div>
   </body>
   <script>
     const w = 500,
@@ -38,7 +49,7 @@
       marginH = 40,
       marginW = 50,
       circMin = 1,
-      circMax = 3;
+      circMax = 3,
       infoTextSize = 4;
 
     var maxPop = 0;
@@ -142,7 +153,7 @@
 
       info
         .append("rect") // Append rectangle which is the background for the information text
-        .attr("y", -(2*infoTextSize+2) )
+        .attr("y", -(2 * infoTextSize + 2))
         .attr("x", 5)
         .attr("rx", 1)
         .attr("ry", 1)
@@ -199,7 +210,9 @@
             )
             .attr(
               "height",
-              1.4 * (gdpText.node().getBBox().height + hdiText.node().getBBox().height)
+              1.4 *
+                (gdpText.node().getBBox().height +
+                  hdiText.node().getBBox().height)
             );
           info.moveToFront();
           info.transition().duration(400).style("opacity", 0.85);
@@ -227,39 +240,7 @@
             .attr("y", i * 10)
             .attr("height", 8)
             .attr("width", 20)
-            .style("fill", color(d))
-            .on("mouseover", function (d, i) {
-              d3.select(this)
-                .transition()
-                .duration("50")
-                .attr("opacity", ".85");
-            })
-            .on("mouseout", function (d, i) {
-              d3.select(this).transition().duration("50").attr("opacity", "1");
-            })
-            .on("click", function (d, i) {
-              d3.select(this)
-                .transition()
-                .duration("100")
-                .attr("opacity", "0.85");
-              d3.selectAll("circle")
-                .transition()
-                .duration("100")
-                .attr("opacity", function (c, i) {
-                  if (color(c.continent) == color(d)) {
-                    return 1;
-                  } else {
-                    return 0;
-                  }
-                })
-                .attr("pointer-events", function (c, i) {
-                  if (color(c.continent) == color(d)) {
-                    return "all";
-                  } else {
-                    return "none";
-                  }
-                });
-            });
+            .style("fill", color(d));
 
           d3.select(this)
             .append("text")
@@ -267,6 +248,60 @@
             .attr("x", 24)
             .text(d);
         });
+
+      const filter = d3.select("#filter").append("g").attr("class", "filter");
+      filter
+        .append("text")
+        .attr("x", 0)
+        .attr("y", 0)
+        .style("font-size", "8pt")
+        .text("Filter continent: ");
+      const filterButton = filter
+        .append("select")
+        .attr("id", "filter-button")
+        .attr("x", 20);
+
+      filterButton.append("option").text("All").attr("All");
+
+      filterButton
+        .selectAll("myOptions")
+        .data(data.continents)
+        .enter()
+        .append("option")
+        .text(function (d) {
+          return d;
+        })
+        .attr("value", function (d) {
+          return d;
+        });
+
+      d3.select("#filter-button").on("change", function () {
+        const selectedContinent = d3.select(this).property("value");
+        d3.select("svg")
+          .selectAll("circle")
+          .transition()
+          .duration("100")
+          .attr("opacity", function (c, i) {
+            if (
+              c.continent == selectedContinent ||
+              selectedContinent == "All"
+            ) {
+              return 1;
+            } else {
+              return 0;
+            }
+          })
+          .attr("pointer-events", function (c, i) {
+            if (
+              c.continent == selectedContinent ||
+              selectedContinent == "All"
+            ) {
+              return "all";
+            } else {
+              return "none";
+            }
+          });
+      });
     }
   </script>
 </html>
