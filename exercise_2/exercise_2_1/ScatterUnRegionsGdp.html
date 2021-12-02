@@ -143,10 +143,6 @@
         .on("mouseout", function (d, i) {
           d3.select(this).transition().duration("50").attr("opacity", "1");
           info.transition().duration(500).style("opacity", 0);
-        })
-        .on("click", function (d, i) {
-          console.log("User clicked " + d.name);
-          
         });
 
       const legend = d3
@@ -166,7 +162,39 @@
             .attr("y", i * 10)
             .attr("height", 8)
             .attr("width", 20)
-            .style("fill", color(d));
+            .style("fill", color(d))
+            .on("mouseover", function (d, i) {
+              d3.select(this)
+                .transition()
+                .duration("50")
+                .attr("opacity", ".85");
+            })
+            .on("mouseout", function (d, i) {
+              d3.select(this).transition().duration("50").attr("opacity", "1");
+            })
+            .on("click", function (d, i) {
+              d3.select(this)
+                .transition()
+                .duration("50")
+                .attr("opacity", "0.85");
+              d3.selectAll("circle")
+                .transition()
+                .duration("500")
+                .attr("opacity", function (c, i) {
+                  if (color(c.continent) == color(d)) {
+                    return 1;
+                  } else {
+                    return 0;
+                  }
+                })
+                .attr("pointer-events", function (c, i) {
+                  if (color(c.continent) == color(d)) {
+                    return "all";
+                  } else {
+                    return "none";
+                  }
+                });
+            });
 
           d3.select(this)
             .append("text")
