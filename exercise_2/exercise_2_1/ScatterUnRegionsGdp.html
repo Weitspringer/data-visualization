@@ -9,9 +9,6 @@
         font-family: "Yanone Kaffeesatz", sans-serif;
         font-size: 7pt;
       }
-      .legend text {
-        alignment-baseline: hanging;
-      }
       .domain {
         opacity: 0;
       }
@@ -39,7 +36,7 @@
       marginH = 40,
       marginW = 50,
       circMin = 1,
-      circMax = 4;
+      circMax = 3;
 
     var maxPop = 0;
     var minPop = Number.MAX_SAFE_INTEGER;
@@ -198,7 +195,7 @@
 
           d3.select(this)
             .append("text")
-            .attr("y", i * 10)
+            .attr("y", i * 10 + 7)
             .attr("x", 24)
             .text(d);
         });
