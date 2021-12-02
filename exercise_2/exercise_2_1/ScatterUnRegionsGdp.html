@@ -24,6 +24,10 @@
         font-size: 9pt;
         text-anchor: middle;
       }
+      .info {
+        font-size: 5pt;
+        text-anchor: middle;
+      }
     </style>
   </head>
   <body>
@@ -73,8 +77,6 @@
         };
       }
     }).then(function (dataset) {
-      console.log(maxPop);
-      console.log(minPop);
       data.continents = [...data.continents].sort((a, b) => d3.ascending(a, b));
       data.countries = dataset;
       scaleY.domain(d3.extent(dataset, (d) => d.gdp));
@@ -116,7 +118,14 @@
         .scaleLinear()
         .domain([minPop, maxPop])
         .range([circMax, circMin]);
-        
+
+      const info = d3
+        .select("svg")
+        .append("text")
+        .attr("class", "info")
+        .attr("transform", `translate(${[w / 2, 3 * (marginH / 4)]})`)
+        .style("opacity", 0);
+
       d3.select("svg")
         .selectAll("circle")
         .data(data.countries)
@@ -125,7 +134,20 @@
         .attr("r", (d) => scaleRadius(d.population))
         .attr("cx", (d) => scaleX(d.hdi))
         .attr("cy", (d) => scaleY(d.gdp))
-        .style("fill", (d) => color(d.continent));
+        .style("fill", (d) => color(d.continent))
+        .on("mouseover", function (d, i) {
+          info.text("Name: " + d.name + ", GDP: " + d.gdp + ", HDI: " + d.hdi);
+          d3.select(this).transition().duration("50").attr("opacity", ".85");
+          info.transition().duration(500).style("opacity", 1);
+        })
+        .on("mouseout", function (d, i) {
+          d3.select(this).transition().duration("50").attr("opacity", "1");
+          info.transition().duration(500).style("opacity", 0);
+        })
+        .on("click", function (d, i) {
+          console.log("User clicked " + d.name);
+          
+        });
 
       const legend = d3
         .select("svg")
