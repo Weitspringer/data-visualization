@@ -21,9 +21,11 @@
         font-size: 9pt;
         text-anchor: middle;
       }
+      .info-text {
+        fill: white;
+      }
       .info {
-        font-size: 5pt;
-        text-anchor: middle;
+        pointer-events: none;
       }
     </style>
   </head>
@@ -37,6 +39,7 @@
       marginW = 50,
       circMin = 1,
       circMax = 3;
+      infoTextSize = 4;
 
     var maxPop = 0;
     var minPop = Number.MAX_SAFE_INTEGER;
@@ -110,6 +113,21 @@
         .attr("transform", `translate(${[3, h / 2]}) rotate(90)`);
     }
 
+    d3.selection.prototype.moveToFront = function () {
+      return this.each(function () {
+        this.parentNode.appendChild(this);
+      });
+    };
+
+    d3.selection.prototype.moveToBack = function () {
+      return this.each(function () {
+        var firstChild = this.parentNode.firstChild;
+        if (firstChild) {
+          this.parentNode.insertBefore(this, firstChild);
+        }
+      });
+    };
+
     function draw() {
       const scaleRadius = d3
         .scaleLinear()
@@ -118,10 +136,35 @@
 
       const info = d3
         .select("svg")
-        .append("text")
+        .append("g") // Create group for all elements in the info box
         .attr("class", "info")
-        .attr("transform", `translate(${[w / 2, 3 * (marginH / 4)]})`)
-        .style("opacity", 0);
+        .style("opacity", 0); // Initial visibility is 0
+
+      info
+        .append("rect") // Append rectangle which is the background for the information text
+        .attr("y", -(2*infoTextSize+2) )
+        .attr("x", 5)
+        .attr("rx", 1)
+        .attr("ry", 1)
+        .attr("fill", "black");
+
+      info
+        .append("g") // Append group for GDP info
+        .attr("id", "gdp")
+        .append("text")
+        .attr("class", "info-text")
+        .style("font-size", infoTextSize + "pt")
+        .attr("y", -infoTextSize)
+        .attr("x", 7);
+
+      info
+        .append("g") // Append group for HDI info
+        .attr("id", "hdi")
+        .append("text")
+        .attr("class", "info-text")
+        .style("font-size", infoTextSize + "pt")
+        .attr("y", infoTextSize)
+        .attr("x", 7);
 
       d3.select("svg")
         .selectAll("circle")
@@ -133,13 +176,38 @@
         .attr("cy", (d) => scaleY(d.gdp))
         .style("fill", (d) => color(d.continent))
         .on("mouseover", function (d, i) {
-          info.text("Name: " + d.name + ", GDP: " + d.gdp + ", HDI: " + d.hdi);
-          d3.select(this).transition().duration("50").attr("opacity", ".85");
-          info.transition().duration(500).style("opacity", 1);
+          info.attr(
+            "transform",
+            `translate(${[scaleX(d.hdi), scaleY(d.gdp) - 5]})`
+          );
+          var gdpText = info
+            .selectAll("#gdp")
+            .select("text")
+            .text("GDP: " + d.gdp);
+          var hdiText = info
+            .selectAll("#hdi")
+            .select("text")
+            .text("HDI: " + d.hdi);
+          info
+            .selectAll("rect")
+            .attr(
+              "width",
+              Math.max(
+                gdpText.node().getBBox().width,
+                hdiText.node().getBBox().width
+              ) + 3
+            )
+            .attr(
+              "height",
+              1.4 * (gdpText.node().getBBox().height + hdiText.node().getBBox().height)
+            );
+          info.moveToFront();
+          info.transition().duration(400).style("opacity", 0.85);
+          d3.select(this).transition().duration(100).attr("opacity", "0.85");
         })
         .on("mouseout", function (d, i) {
-          d3.select(this).transition().duration("50").attr("opacity", "1");
-          info.transition().duration(500).style("opacity", 0);
+          d3.select(this).transition().duration(100).attr("opacity", "1");
+          info.transition().duration(400).style("opacity", 0);
         });
 
       const legend = d3
@@ -172,11 +240,11 @@
             .on("click", function (d, i) {
               d3.select(this)
                 .transition()
-                .duration("50")
+                .duration("100")
                 .attr("opacity", "0.85");
               d3.selectAll("circle")
                 .transition()
-                .duration("500")
+                .duration("100")
                 .attr("opacity", function (c, i) {
                   if (color(c.continent) == color(d)) {
                     return 1;
