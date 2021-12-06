@@ -24,13 +24,15 @@
     <div id="stackedbarchart"></div>
   </body>
   <script>
-    const w = 250,
-      h = 150,
-      legendRectWidth = 10,
-      marginLegend = 5,
-      marginPie = 15;
+    var margin = { top: 20, right: 10, bottom: 10, left: 15, circle: 20 },
+      w = 240 - margin.left - margin.right,
+      h = 160 - margin.top - margin.bottom;
+    const legendRectWidth = 10,
+      legendRectHeight = 5,
+      legendSpacing = 2,
+      legendTextSize = "3pt";
 
-    var radius = Math.min(w, h) / 2 - marginPie;
+    var radius = Math.min(w, h) / 2 - margin.circle;
     labelRadius = radius * 0.85;
 
     var svgPie = d3
@@ -40,13 +42,16 @@
       .attr("height", "100%")
       .attr("viewBox", "0 0 " + w + " " + h)
       .append("g")
-      .attr("transform", "translate(" + 3 * (w / 4) + "," + h / 2 + ")");
+      .attr(
+        "transform",
+        `translate(${[w - margin.right - radius, margin.top + radius]})`
+      );
 
     d3.select("#piechart")
       .select("svg")
       .append("text")
       .text("Distribution of turnover (October)")
-      .attr("transform", `translate(${[0, 0]})`)
+      .attr("transform", `translate(${(0, 0)})`)
       .attr("x", w / 2)
       .attr("y", 10)
       .style("text-anchor", "middle");
@@ -58,29 +63,45 @@
       .attr("height", "100%")
       .attr("viewBox", "0 0 " + w + " " + h)
       .append("g")
-      .attr("transform", "translate(" + w + "," + h / 2 + ")");
+      .attr("transform", "translate(" + margin.left + "," + margin.top + ")");
+
+    d3.select("#stackedbarchart")
+      .select("svg")
+      .append("text")
+      .text("Distribution of turnover over time")
+      .attr("transform", `translate(${(0, 0)})`)
+      .attr("x", w / 2)
+      .attr("y", 10)
+      .style("text-anchor", "middle");
 
     const etf_data = {
-      etf_names: new Set(),
-      etfs: new Set(),
+      groups: new Set(),
+      subgroups: new Set(),
+      data: new Set(),
     };
 
     d3.csv("/exercise_2_2/data/Turnover.csv", function (row) {
-      etf_data.etf_names.add(row.ETF);
       return {
-        name: row.ETF,
-        name_hash: hashCode(row.ETF),
-        jul: +row.turnover_July,
-        aug: +row.turnover_August,
-        sep: +row.turnover_September,
-        oct: +row.turnover_October,
+        key: row.ETF,
+        key_hash: hashCode(row.ETF),
+        turnover_July: +row.turnover_July,
+        turnover_August: +row.turnover_August,
+        turnover_September: +row.turnover_September,
+        turnover_October: +row.turnover_October,
       };
     }).then(function (dataset) {
-      etf_data.etfs = dataset;
-      etf_data.etfs = [...etf_data.etfs].sort(function (a, b) {
-        return d3.descending(a.oct, b.oct);
+      etf_data.data = dataset;
+      etf_data.data = [...etf_data.data].sort(function (a, b) {
+        return d3.descending(a.turnover_October, b.turnover_October);
       });
-      draw();
+      etf_data.subgroups = dataset.columns.slice(1);
+      etf_data.groups = d3
+        .map(dataset, function (d) {
+          return d.key;
+        })
+        .keys();
+      drawPieChart();
+      drawStackedBarChart();
     });
 
     function hashCode(s) {
@@ -90,11 +111,11 @@
       return h;
     }
 
-    function draw() {
+    function drawPieChart() {
       // Ordinal color scale
       var color = d3
         .scaleOrdinal()
-        .domain(etf_data.etf_names)
+        .domain(etf_data.groups)
         .range([
           "#28f524",
           "#8f5e40",
@@ -113,36 +134,38 @@
         .select("svg")
         .append("g")
         .attr("class", "legend")
-        .attr(
-          "transform",
-          `translate(${[marginLegend, marginLegend + marginPie]})`
-        );
+        .attr("transform", `translate(${[margin.left, margin.top]})`);
 
       legend
         .selectAll("g.item")
-        .data(etf_data.etfs)
+        .data(etf_data.data)
         .join("g")
         .attr("class", "item")
         .each(function (d, i) {
           d3.select(this)
             .append("rect")
-            .attr("y", i * 10)
-            .attr("height", "5pt")
+            .attr("y", i * (legendRectHeight + legendSpacing))
+            .attr("height", legendRectHeight)
             .attr("width", legendRectWidth)
-            .attr("id", "rect" + d.name_hash)
-            .style("fill", color(d.name));
+            .attr("id", "rect" + d.key_hash)
+            .style("fill", color(d.key));
 
           d3.select(this)
             .append("text")
-            .attr("y", i * 10 + 6)
+            .attr(
+              "y",
+              i * (legendRectHeight + legendSpacing) +
+                (legendRectHeight + legendSpacing + 1) / 2
+            )
             .attr("x", legendRectWidth + 4)
-            .text(d.name);
+            .style("font-size", legendTextSize)
+            .text(d.key);
         });
 
       var pie = d3.pie().value(function (d) {
-        return d.value.oct;
+        return d.value.turnover_October;
       });
-      var pie_data = pie(d3.entries(etf_data.etfs));
+      var pie_data = pie(d3.entries(etf_data.data));
 
       const arcGenerator = d3.arc().innerRadius(0).outerRadius(radius);
       const arcLabel = d3
@@ -159,7 +182,7 @@
         .on("mouseover", function (d, i) {
           d3.select(this).transition().duration(100).attr("opacity", "0.85");
           legend
-            .select("#rect" + d.data.value.name_hash)
+            .select("#rect" + d.data.value.key_hash)
             .transition()
             .duration(100)
             .attr("width", legendRectWidth + 3);
@@ -167,7 +190,7 @@
         .on("mouseout", function (d, i) {
           d3.select(this).transition().duration(100).attr("opacity", "1");
           legend
-            .select("#rect" + d.data.value.name_hash)
+            .select("#rect" + d.data.value.key_hash)
             .transition()
             .duration(100)
             .attr("width", legendRectWidth);
@@ -175,10 +198,10 @@
         .append("path")
         .attr("d", arcGenerator)
         .attr("fill", function (d) {
-          return color(d.data.value.name);
+          return color(d.data.value.key);
         })
         .attr("stroke", "black")
-        .style("stroke-width", "0.25pt")
+        .style("stroke-width", "0.1pt")
         .style("opacity", 0.7);
 
       svgPie
@@ -187,11 +210,108 @@
         .enter()
         .append("text")
         .text(function (d) {
-          return d.data.value.oct;
+          return d.data.value.turnover_October;
         })
         .attr("class", "pie-value")
         .attr("transform", (d) => `translate(${arcLabel.centroid(d)})`)
         .style("text-anchor", "middle");
+    }
+
+    function drawStackedBarChart() {
+      var color = d3
+        .scaleOrdinal()
+        .domain(etf_data.subgroups)
+        .range(["#28f524", "#005b00", "#19648d", "#76b1df"]);
+
+      const subgroups_copy = etf_data.subgroups.slice();
+
+      const legend = d3
+        .select("#stackedbarchart")
+        .select("svg")
+        .append("g")
+        .attr("class", "legend")
+        .attr("transform", `translate(${[w / 2 + 60, margin.top]})`);
+
+      legend
+        .selectAll("g.item")
+        .data(subgroups_copy.reverse())
+        .join("g")
+        .attr("class", "item")
+        .each(function (d, i) {
+          d3.select(this)
+            .append("rect")
+            .attr("y", i * (legendRectHeight + legendSpacing))
+            .attr("height", legendRectHeight)
+            .attr("width", legendRectWidth)
+            .style("fill", color(d));
+
+          d3.select(this)
+            .append("text")
+            .attr(
+              "y",
+              i * (legendRectHeight + legendSpacing) +
+                (legendRectHeight + legendSpacing + 1) / 2
+            )
+            .attr("x", legendRectWidth + 2)
+            .style("font-size", legendTextSize)
+            .text(d.split('_')[1]);
+        });
+
+      var x = d3
+        .scaleBand()
+        .domain(etf_data.groups)
+        .range([0, w - 50])
+        .padding([0.2]);
+      svgBar
+        .append("g")
+        .attr("transform", "translate(20," + h / 2 + ")")
+        .call(d3.axisBottom(x).tickSizeOuter(0));
+
+      svgBar
+        .selectAll("text")
+        .style("text-anchor", "end")
+        .attr("dx", -5)
+        .attr("dy", -2)
+        .attr("transform", "rotate(-35)");
+
+      var y = d3
+        .scaleLinear()
+        .domain([0, 4000])
+        .range([h / 2, 0]);
+      svgBar
+        .append("g")
+        .attr("transform", "translate(20," + 0 + ")")
+        .call(d3.axisLeft(y));
+
+      svgBar.selectAll("text").style("font-size", "3pt");
+
+      var stackedData = d3.stack().keys(etf_data.subgroups)(etf_data.data);
+
+      svgBar
+        .append("g")
+        .selectAll("g")
+        .data(stackedData)
+        .enter()
+        .append("g")
+        .attr("fill", function (d) {
+          return color(d.key);
+        })
+        .selectAll("rect")
+        .data(function (d) {
+          return d;
+        })
+        .enter()
+        .append("rect")
+        .attr("x", function (d) {
+          return x(d.data.key) + 20;
+        })
+        .attr("y", function (d) {
+          return y(d[1]);
+        })
+        .attr("height", function (d) {
+          return y(d[0]) - y(d[1]);
+        })
+        .attr("width", x.bandwidth());
     }
   </script>
 </html>
