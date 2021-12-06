@@ -7,17 +7,177 @@
     <style>
       text {
         font-family: "Yanone Kaffeesatz", sans-serif;
-        font-size: 7pt;
+        font-size: 5pt;
+      }
+      .pie-value {
+        pointer-events: none;
       }
     </style>
   </head>
   <body>
-    <svg width="100%" height="100%" viewBox="0 0 500 300"></svg>
+    <div id="piechart"></div>
+    <div id="stackedbarchart"></div>
   </body>
   <script>
-    const w = 500,
-      h = 300,
-      marginH = 40,
-      marginW = 50;
+    const w = 250,
+      h = 150,
+      legendRectWidth = 7,
+      marginLegend = 5,
+      marginPie = 15;
+
+    var radius = Math.min(w, h) / 2 - marginPie;
+    labelRadius = radius * 0.85;
+
+    var svgPie = d3
+      .select("#piechart")
+      .append("svg")
+      .attr("width", "100%")
+      .attr("height", "100%")
+      .attr("viewBox", "0 0 " + w + " " + h)
+      .append("g")
+      .attr("transform", "translate(" + 3 * (w / 4) + "," + h / 2 + ")");
+
+    var svgBar = d3
+      .select("#stackedbarchart")
+      .append("svg")
+      .attr("width", "100%")
+      .attr("height", "100%")
+      .attr("viewBox", "0 0 " + w + " " + h)
+      .append("g")
+      .attr("transform", "translate(" + w + "," + h / 2 + ")");
+
+    const etf_data = {
+      etf_names: new Set(),
+      etfs: new Set(),
+    };
+
+    d3.csv("/exercise_2_2/data/Turnover.csv", function (row) {
+      etf_data.etf_names.add(row.ETF);
+      return {
+        name: row.ETF,
+        name_hash: hashCode(row.ETF),
+        jul: +row.turnover_July,
+        aug: +row.turnover_August,
+        sep: +row.turnover_September,
+        oct: +row.turnover_October,
+      };
+    }).then(function (dataset) {
+      etf_data.etfs = dataset;
+      etf_data.etfs = [...etf_data.etfs].sort(function (a, b) {
+        return d3.descending(a.oct, b.oct);
+      });
+      draw();
+    });
+
+    function hashCode(s) {
+      let h = 0;
+      for (let i = 0; i < s.length; i++)
+        h = (Math.imul(31, h) + s.charCodeAt(i)) | 0;
+      return h;
+    }
+
+    function draw() {
+      // Ordinal color scale
+      var color = d3
+        .scaleOrdinal()
+        .domain(etf_data.etf_names)
+        .range([
+          "#28f524",
+          "#8f5e40",
+          "#a3af9e",
+          "#FFEA00",
+          "#00a2f6",
+          "#fd7400",
+          "#7B1FA2",
+          "#7c8b00",
+          "#008133",
+          "#690000",
+        ]);
+
+      const legend = d3
+        .select("#piechart")
+        .select("svg")
+        .append("g")
+        .attr("class", "legend")
+        .attr(
+          "transform",
+          `translate(${[marginLegend, marginLegend + marginPie]})`
+        );
+
+      legend
+        .selectAll("g.item")
+        .data(etf_data.etfs)
+        .join("g")
+        .attr("class", "item")
+        .each(function (d, i) {
+          d3.select(this)
+            .append("rect")
+            .attr("y", i * 10)
+            .attr("height", "5pt")
+            .attr("width", legendRectWidth)
+            .attr("id", "rect" + d.name_hash)
+            .style("fill", color(d.name));
+
+          d3.select(this)
+            .append("text")
+            .attr("y", i * 10 + 6)
+            .attr("x", legendRectWidth + 4)
+            .text(d.name);
+        });
+
+      var pie = d3.pie().value(function (d) {
+        return d.value.oct;
+      });
+      var pie_data = pie(d3.entries(etf_data.etfs));
+
+      const arcGenerator = d3.arc().innerRadius(0).outerRadius(radius);
+      const arcLabel = d3
+        .arc()
+        .innerRadius(labelRadius)
+        .outerRadius(labelRadius);
+
+      svgPie
+        .selectAll("pies")
+        .data(pie_data)
+        .enter()
+        .append("g")
+        .on("mouseover", function (d, i) {
+          d3.select(this).transition().duration(100).attr("opacity", "0.85");
+          legend
+            .select("#rect" + d.data.value.name_hash)
+            .transition()
+            .duration(100)
+            .attr("width", legendRectWidth + 3);
+        })
+        .on("mouseout", function (d, i) {
+          d3.select(this).transition().duration(100).attr("opacity", "1");
+          legend
+            .select("#rect" + d.data.value.name_hash)
+            .transition()
+            .duration(100)
+            .attr("width", legendRectWidth);
+        })
+        .append("path")
+        .attr("d", arcGenerator)
+        .attr("fill", function (d) {
+          return color(d.data.value.name);
+        })
+        .attr("stroke", "black")
+        .style("stroke-width", "0.25pt")
+        .style("opacity", 0.7);
+
+      svgPie
+        .selectAll("pies")
+        .data(pie_data)
+        .enter()
+        .append("text")
+        .text(function (d) {
+          return d.data.value.oct;
+        })
+        .attr("class", "pie-value")
+        .attr("transform", (d) => `translate(${arcLabel.centroid(d)})`)
+        .style("text-anchor", "middle")
+        .style("font-size", 17);
+    }
   </script>
 </html>
