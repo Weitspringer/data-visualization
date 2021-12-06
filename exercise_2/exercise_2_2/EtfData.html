@@ -12,6 +12,7 @@
       .pie-value {
         pointer-events: none;
         z-index: 0;
+        font-size: 3pt;
       }
       .pie-piece {
         z-index: 1;
@@ -182,7 +183,6 @@
         .attr("class", "pie-value")
         .attr("transform", (d) => `translate(${arcLabel.centroid(d)})`)
         .style("text-anchor", "middle")
-        .style("font-size", 17);
     }
   </script>
 </html>
