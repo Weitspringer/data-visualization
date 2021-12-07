@@ -52,9 +52,9 @@
       return covid_data.data.filter(entry => entry.key === key)
     }
 
-    // Retrieve array containing course of total cases
-    function getTotalCases(key) {
-      return getData(key).map(entry => entry.total_cases);
+    // Retrieve array containing values of single column
+    function getFilteredColumnData(key, column) {
+      return getData(key).map(entry => entry[column]);
     }
 
     function draw() {
