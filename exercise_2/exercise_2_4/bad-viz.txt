@@ -1,0 +1,18 @@
+Image 1:
+The linear interpolation is misleading. The number of new cases does not increase linearily over time, but is measured in a single point in time (discrete).
+Futhermore, a decrease in the line chart does not implicate a reduction in the total cases, but only a lower number of new cases in the next day.
+This is negative, because the visualization contains a wrong statement at first sight and also implies an unrealistic time course.
+
+Image 2:
+Too many colors and their shades (i.e. California and Colorado are hard to separate). This is negative because the user has 
+1) an information overload and 
+2) could read the data in a wrong way (confusion of colors)
+
+Image 3:
+The visualization is badly scaled. The difference between the two bars is exaggerated, even though the difference is only 0.107.
+This is negative because the user has to carefully read the y-scale, but the attention is on the two bars first.
+
+Image 4:
+The aim was to represent the number of murders by firearms as a red mountain range.
+However, by inverting the y-axis, the white area is perceived as a metaphor for a mountain range. 
+This is negative because it first gives the impression that the number of murders increased in the 90s, which is not the case.
