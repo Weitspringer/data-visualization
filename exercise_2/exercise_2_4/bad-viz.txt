@@ -9,7 +9,7 @@ Too many colors and their shades (i.e. California and Colorado are hard to separ
 2) could read the data in a wrong way (confusion of colors)
 
 Image 3:
-The visualization is badly scaled. The difference between the two bars is exaggerated, even though the difference is only 0.107.
+The visualization is badly scaled in y-direction. The difference between the two bars is exaggerated, even though the difference is only 0.107.
 This is negative because the user has to carefully read the y-scale, but the attention is on the two bars first.
 
 Image 4:
