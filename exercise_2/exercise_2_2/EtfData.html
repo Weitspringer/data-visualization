@@ -254,7 +254,7 @@
             )
             .attr("x", legendRectWidth + 2)
             .style("font-size", legendTextSize)
-            .text(d.split('_')[1]);
+            .text(d.split("_")[1]);
         });
 
       var x = d3
@@ -262,6 +262,7 @@
         .domain(etf_data.groups)
         .range([0, w - 50])
         .padding([0.2]);
+  
       svgBar
         .append("g")
         .attr("transform", "translate(20," + h / 2 + ")")
@@ -276,7 +277,7 @@
 
       var y = d3
         .scaleLinear()
-        .domain([0, 4000])
+        .domain([0, 3500])
         .range([h / 2, 0]);
       svgBar
         .append("g")
