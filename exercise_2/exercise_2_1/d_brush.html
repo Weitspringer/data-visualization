@@ -36,6 +36,7 @@
 
     var maxPop = 0;
     var minPop = Number.MAX_SAFE_INTEGER;
+    var initialXDomain, initialYDomain;
 
     const scaleX = d3.scaleLinear().range([marginW, w - marginW]);
     const scaleY = d3.scaleLog().range([h - marginH, marginH]);
@@ -72,8 +73,10 @@
     }).then(function (dataset) {
       data.continents = [...data.continents].sort((a, b) => d3.ascending(a, b));
       data.countries = dataset;
-      scaleY.domain(d3.extent(dataset, (d) => d.gdp));
-      scaleX.domain(d3.extent(dataset, (d) => d.hdi));
+      initialYDomain = d3.extent(dataset, (d) => d.gdp);
+      initialXDomain = d3.extent(dataset, (d) => d.hdi);
+      scaleY.domain(initialYDomain);
+      scaleX.domain(initialXDomain);
 
       draw();
       drawLegend();
@@ -110,8 +113,23 @@
         .text("Annual GDP per capita (USD)")
         .attr("transform", `translate(${[3, h / 2]}) rotate(90)`);
 
-      const scatter = d3
+      var clip = d3
         .select("svg")
+        .append("defs")
+        .append("svg:clipPath")
+        .attr("id", "clip")
+        .append("svg:rect")
+        .attr("width", w - marginW)
+        .attr("height", h)
+        .attr("x", 0)
+        .attr("y", 0);
+
+      var scatter = d3
+        .select("svg")
+        .append("g")
+        .attr("clip-path", "url(#clip)");
+
+      scatter
         .selectAll("circle")
         .data(data.countries)
         .enter()
@@ -121,11 +139,11 @@
         .attr("cy", (d) => scaleY(d.gdp))
         .style("fill", (d) => color(d.continent));
 
-      const brush = d3
+      var brush = d3
         .brushX()
         .extent([
-          [0, 0],
-          [w, h],
+          [40, 35],
+          [w - 45, h - 35],
         ])
         .on("end", updateScatterPlot);
 
@@ -141,15 +159,21 @@
 
         if (!extent) {
           if (!idleTimeout) return (idleTimeout = setTimeout(idled, 350));
-          scaleX.domain([4, 8]);
+          scaleX.domain(initialXDomain);
         } else {
-          scaleX.domain([x.invert(extent[0]), x.invert(extent[1])]);
+          scaleX.domain([scaleX.invert(extent[0]), scaleX.invert(extent[1])]);
           scatter.select(".brush").call(brush.move, null);
         }
 
-        // Update axis and circle position
-        xG.transition().duration(1000).call(d3.axisBottom(scaleX));
-        scatter
+        // Update axis
+        const axisX = d3
+          .axisBottom(scaleX)
+          .tickSize(h - marginH * 2 + 10)
+          .tickPadding(2);
+
+        xG.transition().duration(1000).call(axisX);
+
+        d3.select("svg")
           .selectAll("circle")
           .transition()
           .duration(1000)
