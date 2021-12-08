@@ -27,19 +27,12 @@
     <svg width="100%" height="100%" viewBox="0 0 500 300"></svg>
   </body>
   <script>
-    d3.selection.prototype.moveToFront = function () {
-      return this.each(function () {
-        this.parentNode.appendChild(this);
-      });
-    };
-
     const w = 500,
       h = 300,
       marginH = 40,
       marginW = 50,
-      circMin = 2,
-      circMax = 3,
-      infoTextSize = 4;
+      circMin = 1,
+      circMax = 6;
 
     var maxPop = 0;
     var minPop = Number.MAX_SAFE_INTEGER;
@@ -65,8 +58,8 @@
     d3.csv("/exercise_2_1/data/UnRegionsGdp.csv", function (row) {
       if (row.HDI_2017 > 0 && row.GDP_2017 > 0) {
         data.continents.add(row.Continent);
-        maxPop = row.Pop_2016 > maxPop ? row.Pop_2016 : maxPop;
-        minPop = row.Pop_2016 < minPop ? row.Pop_2016 : minPop;
+        maxPop = +row.Pop_2016 > maxPop ? +row.Pop_2016 : maxPop;
+        minPop = +row.Pop_2016 < minPop ? +row.Pop_2016 : minPop;
         return {
           name: row.Country,
           code: row.Code,
@@ -87,6 +80,11 @@
     });
 
     function draw() {
+      const scaleRadius = d3
+        .scaleSqrt()
+        .domain([minPop, maxPop])
+        .range([circMin, circMax]);
+
       const xG = d3
         .select("svg")
         .append("g")
@@ -111,11 +109,6 @@
         .attr("class", "label")
         .text("Annual GDP per capita (USD)")
         .attr("transform", `translate(${[3, h / 2]}) rotate(90)`);
-
-      const scaleRadius = d3
-        .scaleLinear()
-        .domain([minPop, maxPop])
-        .range([circMax, circMin]);
 
       const scatter = d3
         .select("svg")

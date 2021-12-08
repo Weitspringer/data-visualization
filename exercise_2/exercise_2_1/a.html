@@ -42,8 +42,7 @@
       marginH = 40,
       marginW = 50,
       circMin = 1,
-      circMax = 3,
-      infoTextSize = 4;
+      circMax = 6;
 
     var maxPop = 0;
     var minPop = Number.MAX_SAFE_INTEGER;
@@ -69,8 +68,8 @@
     d3.csv("/exercise_2_1/data/UnRegionsGdp.csv", function (row) {
       if (row.HDI_2017 > 0 && row.GDP_2017 > 0) {
         data.continents.add(row.Continent);
-        maxPop = row.Pop_2016 > maxPop ? row.Pop_2016 : maxPop;
-        minPop = row.Pop_2016 < minPop ? row.Pop_2016 : minPop;
+        maxPop = +row.Pop_2016 > maxPop ? +row.Pop_2016 : maxPop;
+        minPop = +row.Pop_2016 < minPop ? +row.Pop_2016 : minPop;
         return {
           name: row.Country,
           code: row.Code,
@@ -86,11 +85,16 @@
       scaleY.domain(d3.extent(dataset, (d) => d.gdp));
       scaleX.domain(d3.extent(dataset, (d) => d.hdi));
 
-      drawAxes();
       draw();
+      drawLegend();
     });
 
-    function drawAxes() {
+    function draw() {
+      const scaleRadius = d3
+        .scaleSqrt()
+        .domain([minPop, maxPop])
+        .range([circMin, circMax]);
+      
       const xG = d3
         .select("svg")
         .append("g")
@@ -115,30 +119,9 @@
         .attr("class", "label")
         .text("Annual GDP per capita (USD)")
         .attr("transform", `translate(${[3, h / 2]}) rotate(90)`);
-    };
 
-    d3.selection.prototype.moveToFront = function () {
-      return this.each(function () {
-        this.parentNode.appendChild(this);
-      });
-    };
-
-    d3.selection.prototype.moveToBack = function () {
-      return this.each(function () {
-        var firstChild = this.parentNode.firstChild;
-        if (firstChild) {
-          this.parentNode.insertBefore(this, firstChild);
-        }
-      });
-    };
-
-    function draw() {
-      const scaleRadius = d3
-        .scaleLinear()
-        .domain([minPop, maxPop])
-        .range([circMax, circMin]);
-
-      d3.select("svg")
+      const scatter = d3
+        .select("svg")
         .selectAll("circle")
         .data(data.countries)
         .enter()
@@ -147,7 +130,9 @@
         .attr("cx", (d) => scaleX(d.hdi))
         .attr("cy", (d) => scaleY(d.gdp))
         .style("fill", (d) => color(d.continent));
+    }
 
+    function drawLegend() {
       const legend = d3
         .select("svg")
         .append("g")

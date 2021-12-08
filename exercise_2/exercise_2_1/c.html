@@ -49,7 +49,7 @@
       marginH = 40,
       marginW = 50,
       circMin = 1,
-      circMax = 3,
+      circMax = 6,
       infoTextSize = 4;
 
     var maxPop = 0;
@@ -76,8 +76,8 @@
     d3.csv("/exercise_2_1/data/UnRegionsGdp.csv", function (row) {
       if (row.HDI_2017 > 0 && row.GDP_2017 > 0) {
         data.continents.add(row.Continent);
-        maxPop = row.Pop_2016 > maxPop ? row.Pop_2016 : maxPop;
-        minPop = row.Pop_2016 < minPop ? row.Pop_2016 : minPop;
+        maxPop = +row.Pop_2016 > maxPop ? +row.Pop_2016 : maxPop;
+        minPop = +row.Pop_2016 < minPop ? +row.Pop_2016 : minPop;
         return {
           name: row.Country,
           code: row.Code,
@@ -93,8 +93,9 @@
       scaleY.domain(d3.extent(dataset, (d) => d.gdp));
       scaleX.domain(d3.extent(dataset, (d) => d.hdi));
 
-      drawAxes();
       draw();
+      drawLegend();
+      addFilter();
     });
 
     function drawAxes() {
@@ -122,7 +123,7 @@
         .attr("class", "label")
         .text("Annual GDP per capita (USD)")
         .attr("transform", `translate(${[3, h / 2]}) rotate(90)`);
-    };
+    }
 
     d3.selection.prototype.moveToFront = function () {
       return this.each(function () {
@@ -130,20 +131,36 @@
       });
     };
 
-    d3.selection.prototype.moveToBack = function () {
-      return this.each(function () {
-        var firstChild = this.parentNode.firstChild;
-        if (firstChild) {
-          this.parentNode.insertBefore(this, firstChild);
-        }
-      });
-    };
-
     function draw() {
       const scaleRadius = d3
-        .scaleLinear()
+        .scaleSqrt()
         .domain([minPop, maxPop])
-        .range([circMax, circMin]);
+        .range([circMin, circMax]);
+
+      const xG = d3
+        .select("svg")
+        .append("g")
+        .attr("class", "x-axis")
+        .attr("transform", `translate(${[0, marginH]})`)
+        .call(axisX);
+
+      const yG = d3
+        .select("svg")
+        .append("g")
+        .attr("class", "y-axis")
+        .attr("transform", `translate(${[w - marginW, 0]})`)
+        .call(axisY);
+
+      d3.select("svg")
+        .append("text")
+        .attr("class", "label")
+        .text("Human Development Index (HDI)")
+        .attr("transform", `translate(${[w / 2, h - 3]})`);
+      d3.select("svg")
+        .append("text")
+        .attr("class", "label")
+        .text("Annual GDP per capita (USD)")
+        .attr("transform", `translate(${[3, h / 2]}) rotate(90)`);
 
       const info = d3
         .select("svg")
@@ -222,7 +239,9 @@
           d3.select(this).transition().duration(100).attr("opacity", "1");
           info.transition().duration(400).style("opacity", 0);
         });
+    }
 
+    function drawLegend() {
       const legend = d3
         .select("svg")
         .append("g")
@@ -248,7 +267,9 @@
             .attr("x", 24)
             .text(d);
         });
+    }
 
+    function addFilter() {
       const filter = d3.select("#filter").append("g").attr("class", "filter");
       filter
         .append("text")
