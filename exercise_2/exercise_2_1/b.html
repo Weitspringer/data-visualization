@@ -2,7 +2,7 @@
 <html lang="en">
   <head>
     <meta charset="UTF-8" />
-    <title>Exercise 2.1 a)</title>
+    <title>Details on demand</title>
     <script src="https://d3js.org/d3.v5.min.js"></script>
     <style>
       text {
@@ -21,23 +21,33 @@
         font-size: 9pt;
         text-anchor: middle;
       }
+      .info-text {
+        fill: white;
+      }
+      .info {
+        pointer-events: none;
+      }
     </style>
   </head>
   <body>
-    <svg width="100%" height="100%" viewBox="0 0 500 300"></svg>
+    <div
+      width="100%"
+      height="100%"
+      viewBox="0 0 500 300"
+      id="content"
+      class="row"
+    >
+      <div id="content-svg">
+        <svg width="100%" height="100%" viewBox="0 0 500 300"></svg>
+      </div>
+    </div>
   </body>
   <script>
-    d3.selection.prototype.moveToFront = function () {
-      return this.each(function () {
-        this.parentNode.appendChild(this);
-      });
-    };
-
     const w = 500,
       h = 300,
       marginH = 40,
       marginW = 50,
-      circMin = 2,
+      circMin = 1,
       circMax = 3,
       infoTextSize = 4;
 
@@ -82,11 +92,11 @@
       scaleY.domain(d3.extent(dataset, (d) => d.gdp));
       scaleX.domain(d3.extent(dataset, (d) => d.hdi));
 
+      drawAxes();
       draw();
-      drawLegend();
     });
 
-    function draw() {
+    function drawAxes() {
       const xG = d3
         .select("svg")
         .append("g")
@@ -111,14 +121,62 @@
         .attr("class", "label")
         .text("Annual GDP per capita (USD)")
         .attr("transform", `translate(${[3, h / 2]}) rotate(90)`);
+    };
 
+    d3.selection.prototype.moveToFront = function () {
+      return this.each(function () {
+        this.parentNode.appendChild(this);
+      });
+    };
+
+    d3.selection.prototype.moveToBack = function () {
+      return this.each(function () {
+        var firstChild = this.parentNode.firstChild;
+        if (firstChild) {
+          this.parentNode.insertBefore(this, firstChild);
+        }
+      });
+    };
+
+    function draw() {
       const scaleRadius = d3
         .scaleLinear()
         .domain([minPop, maxPop])
         .range([circMax, circMin]);
 
-      const scatter = d3
+      const info = d3
         .select("svg")
+        .append("g") // Create group for all elements in the info box
+        .attr("class", "info")
+        .style("opacity", 0); // Initial visibility is 0
+
+      info
+        .append("rect") // Append rectangle which is the background for the information text
+        .attr("y", -(2 * infoTextSize + 2))
+        .attr("x", 5)
+        .attr("rx", 1)
+        .attr("ry", 1)
+        .attr("fill", "black");
+
+      info
+        .append("g") // Append group for GDP info
+        .attr("id", "gdp")
+        .append("text")
+        .attr("class", "info-text")
+        .style("font-size", infoTextSize + "pt")
+        .attr("y", -infoTextSize)
+        .attr("x", 7);
+
+      info
+        .append("g") // Append group for HDI info
+        .attr("id", "hdi")
+        .append("text")
+        .attr("class", "info-text")
+        .style("font-size", infoTextSize + "pt")
+        .attr("y", infoTextSize)
+        .attr("x", 7);
+
+      d3.select("svg")
         .selectAll("circle")
         .data(data.countries)
         .enter()
@@ -126,51 +184,44 @@
         .attr("r", (d) => scaleRadius(d.population))
         .attr("cx", (d) => scaleX(d.hdi))
         .attr("cy", (d) => scaleY(d.gdp))
-        .style("fill", (d) => color(d.continent));
+        .style("fill", (d) => color(d.continent))
+        .on("mouseover", function (d, i) {
+          info.attr(
+            "transform",
+            `translate(${[scaleX(d.hdi), scaleY(d.gdp) - 5]})`
+          );
+          var gdpText = info
+            .selectAll("#gdp")
+            .select("text")
+            .text("GDP: " + d.gdp);
+          var hdiText = info
+            .selectAll("#hdi")
+            .select("text")
+            .text("HDI: " + d.hdi);
+          info
+            .selectAll("rect")
+            .attr(
+              "width",
+              Math.max(
+                gdpText.node().getBBox().width,
+                hdiText.node().getBBox().width
+              ) + 3
+            )
+            .attr(
+              "height",
+              1.4 *
+                (gdpText.node().getBBox().height +
+                  hdiText.node().getBBox().height)
+            );
+          info.moveToFront();
+          info.transition().duration(400).style("opacity", 0.85);
+          d3.select(this).transition().duration(100).attr("opacity", "0.85");
+        })
+        .on("mouseout", function (d, i) {
+          d3.select(this).transition().duration(100).attr("opacity", "1");
+          info.transition().duration(400).style("opacity", 0);
+        });
 
-      const zoom = d3
-        .zoom()
-        .scaleExtent([0.5, 20])
-        .extent([
-          [0, 0],
-          [w, h],
-        ])
-        .on("zoom", updateScatterPlot);
-
-      d3.select("svg")
-        .append("rect")
-        .attr("width", w)
-        .attr("height", h)
-        .style("fill", "none")
-        .style("pointer-events", "all")
-        .attr("transform", `translate(${[0, 0]})`)
-        .call(zoom);
-
-      function updateScatterPlot() {
-        const newScaleX = d3.event.transform.rescaleX(scaleX);
-        const newScaleY = d3.event.transform.rescaleY(scaleY);
-
-        aX = d3
-          .axisBottom(newScaleX)
-          .tickSize(h - marginH * 2 + 10)
-          .tickPadding(2);
-        aY = d3
-          .axisLeft(newScaleY)
-          .tickSize(w - marginW * 2 + 10)
-          .tickPadding(2)
-          .ticks(8, ",");
-
-        xG.call(aX);
-        yG.call(aY);
-
-        d3.select("svg")
-          .selectAll("circle")
-          .attr("cx", (d) => newScaleX(d.hdi) - 20)
-          .attr("cy", (d) => newScaleY(d.gdp) - 20);
-      }
-    }
-
-    function drawLegend() {
       const legend = d3
         .select("svg")
         .append("g")

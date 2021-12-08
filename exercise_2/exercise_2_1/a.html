@@ -2,7 +2,7 @@
 <html lang="en">
   <head>
     <meta charset="UTF-8" />
-    <title>Exercise 2.1 b)</title>
+    <title>Scale radius regarding population</title>
     <script src="https://d3js.org/d3.v5.min.js"></script>
     <style>
       text {
@@ -20,12 +20,6 @@
       .label {
         font-size: 9pt;
         text-anchor: middle;
-      }
-      .info-text {
-        fill: white;
-      }
-      .info {
-        pointer-events: none;
       }
     </style>
   </head>
@@ -144,38 +138,6 @@
         .domain([minPop, maxPop])
         .range([circMax, circMin]);
 
-      const info = d3
-        .select("svg")
-        .append("g") // Create group for all elements in the info box
-        .attr("class", "info")
-        .style("opacity", 0); // Initial visibility is 0
-
-      info
-        .append("rect") // Append rectangle which is the background for the information text
-        .attr("y", -(2 * infoTextSize + 2))
-        .attr("x", 5)
-        .attr("rx", 1)
-        .attr("ry", 1)
-        .attr("fill", "black");
-
-      info
-        .append("g") // Append group for GDP info
-        .attr("id", "gdp")
-        .append("text")
-        .attr("class", "info-text")
-        .style("font-size", infoTextSize + "pt")
-        .attr("y", -infoTextSize)
-        .attr("x", 7);
-
-      info
-        .append("g") // Append group for HDI info
-        .attr("id", "hdi")
-        .append("text")
-        .attr("class", "info-text")
-        .style("font-size", infoTextSize + "pt")
-        .attr("y", infoTextSize)
-        .attr("x", 7);
-
       d3.select("svg")
         .selectAll("circle")
         .data(data.countries)
@@ -184,43 +146,7 @@
         .attr("r", (d) => scaleRadius(d.population))
         .attr("cx", (d) => scaleX(d.hdi))
         .attr("cy", (d) => scaleY(d.gdp))
-        .style("fill", (d) => color(d.continent))
-        .on("mouseover", function (d, i) {
-          info.attr(
-            "transform",
-            `translate(${[scaleX(d.hdi), scaleY(d.gdp) - 5]})`
-          );
-          var gdpText = info
-            .selectAll("#gdp")
-            .select("text")
-            .text("GDP: " + d.gdp);
-          var hdiText = info
-            .selectAll("#hdi")
-            .select("text")
-            .text("HDI: " + d.hdi);
-          info
-            .selectAll("rect")
-            .attr(
-              "width",
-              Math.max(
-                gdpText.node().getBBox().width,
-                hdiText.node().getBBox().width
-              ) + 3
-            )
-            .attr(
-              "height",
-              1.4 *
-                (gdpText.node().getBBox().height +
-                  hdiText.node().getBBox().height)
-            );
-          info.moveToFront();
-          info.transition().duration(400).style("opacity", 0.85);
-          d3.select(this).transition().duration(100).attr("opacity", "0.85");
-        })
-        .on("mouseout", function (d, i) {
-          d3.select(this).transition().duration(100).attr("opacity", "1");
-          info.transition().duration(400).style("opacity", 0);
-        });
+        .style("fill", (d) => color(d.continent));
 
       const legend = d3
         .select("svg")

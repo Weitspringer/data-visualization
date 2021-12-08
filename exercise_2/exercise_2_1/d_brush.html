@@ -2,7 +2,7 @@
 <html lang="en">
   <head>
     <meta charset="UTF-8" />
-    <title>Exercise 2.1 a)</title>
+    <title>Brush functionality</title>
     <script src="https://d3js.org/d3.v5.min.js"></script>
     <style>
       text {
@@ -24,24 +24,20 @@
     </style>
   </head>
   <body>
-    <div
-      width="100%"
-      height="100%"
-      viewBox="0 0 500 300"
-      id="content"
-      class="row"
-    >
-      <div id="content-svg">
-        <svg width="100%" height="100%" viewBox="0 0 500 300"></svg>
-      </div>
-    </div>
+    <svg width="100%" height="100%" viewBox="0 0 500 300"></svg>
   </body>
   <script>
+    d3.selection.prototype.moveToFront = function () {
+      return this.each(function () {
+        this.parentNode.appendChild(this);
+      });
+    };
+
     const w = 500,
       h = 300,
       marginH = 40,
       marginW = 50,
-      circMin = 1,
+      circMin = 2,
       circMax = 3,
       infoTextSize = 4;
 
@@ -86,11 +82,11 @@
       scaleY.domain(d3.extent(dataset, (d) => d.gdp));
       scaleX.domain(d3.extent(dataset, (d) => d.hdi));
 
-      drawAxes();
       draw();
+      drawLegend();
     });
 
-    function drawAxes() {
+    function draw() {
       const xG = d3
         .select("svg")
         .append("g")
@@ -115,62 +111,14 @@
         .attr("class", "label")
         .text("Annual GDP per capita (USD)")
         .attr("transform", `translate(${[3, h / 2]}) rotate(90)`);
-    };
 
-    d3.selection.prototype.moveToFront = function () {
-      return this.each(function () {
-        this.parentNode.appendChild(this);
-      });
-    };
-
-    d3.selection.prototype.moveToBack = function () {
-      return this.each(function () {
-        var firstChild = this.parentNode.firstChild;
-        if (firstChild) {
-          this.parentNode.insertBefore(this, firstChild);
-        }
-      });
-    };
-
-    function draw() {
       const scaleRadius = d3
         .scaleLinear()
         .domain([minPop, maxPop])
         .range([circMax, circMin]);
 
-      const info = d3
+      const scatter = d3
         .select("svg")
-        .append("g") // Create group for all elements in the info box
-        .attr("class", "info")
-        .style("opacity", 0); // Initial visibility is 0
-
-      info
-        .append("rect") // Append rectangle which is the background for the information text
-        .attr("y", -(2 * infoTextSize + 2))
-        .attr("x", 5)
-        .attr("rx", 1)
-        .attr("ry", 1)
-        .attr("fill", "black");
-
-      info
-        .append("g") // Append group for GDP info
-        .attr("id", "gdp")
-        .append("text")
-        .attr("class", "info-text")
-        .style("font-size", infoTextSize + "pt")
-        .attr("y", -infoTextSize)
-        .attr("x", 7);
-
-      info
-        .append("g") // Append group for HDI info
-        .attr("id", "hdi")
-        .append("text")
-        .attr("class", "info-text")
-        .style("font-size", infoTextSize + "pt")
-        .attr("y", infoTextSize)
-        .attr("x", 7);
-
-      d3.select("svg")
         .selectAll("circle")
         .data(data.countries)
         .enter()
@@ -180,6 +128,44 @@
         .attr("cy", (d) => scaleY(d.gdp))
         .style("fill", (d) => color(d.continent));
 
+      const brush = d3
+        .brushX()
+        .extent([
+          [0, 0],
+          [w, h],
+        ])
+        .on("end", updateScatterPlot);
+
+      scatter.append("g").attr("class", "brush").call(brush);
+
+      var idleTimeout;
+      function idled() {
+        idleTimeout = null;
+      }
+
+      function updateScatterPlot() {
+        extent = d3.event.selection;
+
+        if (!extent) {
+          if (!idleTimeout) return (idleTimeout = setTimeout(idled, 350));
+          scaleX.domain([4, 8]);
+        } else {
+          scaleX.domain([x.invert(extent[0]), x.invert(extent[1])]);
+          scatter.select(".brush").call(brush.move, null);
+        }
+
+        // Update axis and circle position
+        xG.transition().duration(1000).call(d3.axisBottom(scaleX));
+        scatter
+          .selectAll("circle")
+          .transition()
+          .duration(1000)
+          .attr("cx", (d) => scaleX(d.hdi))
+          .attr("cy", (d) => scaleY(d.gdp));
+      }
+    }
+
+    function drawLegend() {
       const legend = d3
         .select("svg")
         .append("g")
