@@ -110,8 +110,23 @@
         .text("Annual GDP per capita (USD)")
         .attr("transform", `translate(${[3, h / 2]}) rotate(90)`);
 
-      const scatter = d3
+      var clip = d3
         .select("svg")
+        .append("defs")
+        .append("svg:clipPath")
+        .attr("id", "clip")
+        .append("svg:rect")
+        .attr("width", w - 87)
+        .attr("height", h - 65)
+        .attr("x", 40)
+        .attr("y", 37);
+
+      var scatter = d3
+        .select("svg")
+        .append("g")
+        .attr("clip-path", "url(#clip)")
+
+      scatter
         .selectAll("circle")
         .data(data.countries)
         .enter()
@@ -158,8 +173,8 @@
 
         d3.select("svg")
           .selectAll("circle")
-          .attr("cx", (d) => newScaleX(d.hdi) - 20)
-          .attr("cy", (d) => newScaleY(d.gdp) - 20);
+          .attr("cx", (d) => newScaleX(d.hdi))
+          .attr("cy", (d) => newScaleY(d.gdp));
       }
     }
 
