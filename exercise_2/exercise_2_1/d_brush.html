@@ -113,16 +113,16 @@
         .text("Annual GDP per capita (USD)")
         .attr("transform", `translate(${[3, h / 2]}) rotate(90)`);
 
-      var clip = d3
+        var clip = d3
         .select("svg")
         .append("defs")
         .append("svg:clipPath")
         .attr("id", "clip")
         .append("svg:rect")
-        .attr("width", w - marginW)
-        .attr("height", h)
-        .attr("x", 0)
-        .attr("y", 0);
+        .attr("width", w - 87)
+        .attr("height", h - 65)
+        .attr("x", 40)
+        .attr("y", 37);
 
       var scatter = d3
         .select("svg")
