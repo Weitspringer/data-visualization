@@ -1,0 +1,29 @@
+a)
+Mean age: 23.1465863 
+Mean height: 1.68638554
+Mean weight: 69.5698795
+
+b)
+Standard deviation age: 6.71483091
+Standard deviation height: 0.0975554
+Standard deviation weight: 16.9961264
+
+c)
+Covariance matix:
+
+        Age         Height      Weight
+Age     45.0889542  0.00026879  29.5981904
+
+Height  0.00026879  0.00951706  0.95071242
+
+Weight  29.5981904  0.95071242  288.868651
+
+d)
+Statement 1: The average age of a person in the dataset is 23 years, the average height is 1.69 meters, 
+and the average weight is 70 kg. This shows that the major population in the dataset is relatively young, for example.
+
+Statement 2: The standard deviation of the height with a value of 0.0975554 indicates strong accumulation 
+of the height values close to the mean height of ca. 1.69 meters.
+
+Statement 3: The covariance of ca. 29.6 of age and weight values shows the tendency of a linear correlation 
+of age and weight. Because the value of the covariance is positive, this means that greater age trends to higher weight.
