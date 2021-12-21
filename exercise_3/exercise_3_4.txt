@@ -1,0 +1,20 @@
+Bad visualization No. 5:
+The normalized stacked area chart is masked with the landmass of the USA. 
+This complicates the reading of the chart for the user and furthermore distorts the data to match the shape 
+(for example the values in the year 2060 are not vertically aligned; 
+percentages of "Asian" and "Other" disappear completely in 2010). 
+
+Bad visualization No. 7:
+Image of the doctor has high visual complexity and is obsolete, the height of pairwise doctors 
+can't be compared accurately with the human eye.
+Additionally, the timeline is not linearly scaled so the images fit next to each other without overlapping.
+
+Bad visualization No. 9:
+1) Wordy description of the axes
+2) Thickness not explained but used
+3) x-axis not numerically scaled - which side is increase, which is decrease (-> user has to guess)
+
+Bad visualization No. 10:
+1) Eye is same color as the specified color for a segment
+2) 1960: 1% Asian or 1% other? Not clear, radius of segment for each group is too low
+   and therefore can't be properly visualized.
