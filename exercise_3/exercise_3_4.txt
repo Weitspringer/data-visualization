@@ -1,5 +1,5 @@
 Bad visualization No. 5:
-The normalized stacked area chart is masked with the landmass of the USA. 
+The normalized stacked area chart is masked with the landmass of the USA (spatial mapping)
 This complicates the reading of the chart for the user and furthermore distorts the data to match the shape 
 (for example the values in the year 2060 are not vertically aligned; 
 percentages of "Asian" and "Other" disappear completely in 2010). 
