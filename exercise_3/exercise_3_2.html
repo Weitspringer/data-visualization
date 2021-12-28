@@ -1,0 +1,46 @@
+<!DOCTYPE html>
+<html lang="eng">
+  <head>
+    <meta charset="UTF-8" />
+    <title>Normalized Area Chart for Energy Consumption</title>
+    <script src="https://d3js.org/d3.v5.min.js"></script>
+    <style>
+      text {
+        font-family: "Yanone Kaffeesatz", sans-serif;
+        font-size: 5pt;
+      }
+    </style>
+  </head>
+  <body>
+    <div id="chart"></div>
+  </body>
+  <script>
+    // Dimensions with margins
+    var margin = { top: 60, right: 230, bottom: 50, left: 50 },
+      width = 800 - margin.left - margin.right,
+      height = 540 - margin.top - margin.bottom;
+    // Insert svg and group
+    var svg = d3.select("chart")
+                .append("svg")
+                .attr("width", width + margin.left + margin.right)
+                .attr("height", height + margin.top + margin.bottom)
+                .append("g")
+                .attr("transform", "translate(" + margin.left + "," + margin.top + ")");
+    // Read csv data
+    d3.csv("/data/EnergyConsumption.csv", function (row) {
+      return {
+        timestamp: row.get("timestamp"),
+        solar_production: row.get("E_S (kW)"),
+        building_consumption: row.get("E_C (kW)"),
+        battery: row.get("E_B (kW)"),
+        power_network: row.get("E_N (kW)"),
+      };
+    }).then(function (data) {
+      // Preprocess data
+      // Create vector for battery charging
+      // Create vector for battery draining
+      // Create vector for network demand
+      // Create vector for network supply
+    });
+  </script>
+</html>
