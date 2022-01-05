@@ -1,236 +1,294 @@
-    <!DOCTYPE html>
-    <html lang="eng">
-    <head>
+<!DOCTYPE html>
+<html lang="eng">
+  <head>
     <meta charset="UTF-8" />
     <title>Interactive Parallel Coordinates Plot</title>
     <script src="https://d3js.org/d3.v5.min.js"></script>
     <style>
-        text, .form {
+      text,
+      label,
+      select,
+      span,
+      p {
         font-family: "Ubuntu", sans-serif;
-        font-size: 7pt;
-        }
-        .title {
+        font-size: 9pt;
+      }
+      .title {
         font-family: "Ubuntu", sans-serif;
         font-size: 20pt;
         font-weight: 300;
-        }
+      }
     </style>
-    </head>
-    <body>
+  </head>
+  <body>
     <div id="chart"></div>
-        <p>
-        <label
-            for="filter-attribute"
-            style="display: inline-block; width: 240px; text-align: right"
-        >
-        Select attribute: <span id="filter-attribute-value"></span>
-        </label>
-        <select id="filter-attribute">
-        </select>
-        </p>
-        <p id="min-cont" style="visibility: hidden;">
-        <label
-            for="filter-min"
-            style="display: inline-block; width: 240px; text-align: right"
-        >
-            Min: <span id="filter-min-value"></span>
-        </label>
-        <input id="filter-min" type="range" step="any">
-        </p>
-        <p id="max-cont" style="visibility: hidden;">
-        <label
-            for="filter-max"
-            style="display: inline-block; width: 240px; text-align: right"
-        >
-            Max: <span id="filter-max-value"></span>
-        </label>
-        <input id="filter-max" type="range" step="any">
-        </p>
-    </body>
-    <script>
+    <p>
+      <label
+        for="filter-attribute"
+        style="display: inline-block; width: 240px; text-align: right"
+      >
+        Select to filter: <span id="filter-attribute-value"></span>
+      </label>
+      <select id="filter-attribute"></select>
+    </p>
+    <p id="min-cont" style="visibility: hidden">
+      <label
+        for="filter-min"
+        style="display: inline-block; width: 240px; text-align: right"
+      >
+        Min: <span id="filter-min-value"></span>
+      </label>
+      <input id="filter-min" type="range" step="any" />
+    </p>
+    <p id="max-cont" style="visibility: hidden">
+      <label
+        for="filter-max"
+        style="display: inline-block; width: 240px; text-align: right"
+      >
+        Max: <span id="filter-max-value"></span>
+      </label>
+      <input id="filter-max" type="range" step="any" />
+    </p>
+  </body>
+  <script>
     // Dimensions with margins
-    var margin = { top: 40, right: 20, bottom: 50, left: 0 },
-        width = 1200 - margin.left - margin.right,
-        height = 500 - margin.top - margin.bottom;
+    var margin = { top: 70, right: 20, bottom: 50, left: 0 },
+      width = 1200 - margin.left - margin.right,
+      height = 550 - margin.top - margin.bottom;
+
+    // Define default opacities
+    const std_opacity_line = 0.7;
+    const std_opacity_axis = 1;
 
     // Insert svg and group
     var svg = d3
-        .select("#chart")
-        .append("svg")
-        .attr("width", width + margin.left + margin.right)
-        .attr("height", height + margin.top + margin.bottom)
-        .append("g")
-        .attr("transform", "translate(" + margin.left + "," + margin.top + ")");
+      .select("#chart")
+      .append("svg")
+      .attr("width", width + margin.left + margin.right)
+      .attr("height", height + margin.top + margin.bottom)
+      .append("g")
+      .attr("transform", "translate(" + margin.left + "," + margin.top + ")");
 
     // Read csv data
     d3.csv("/data/Wine.csv", function (row) {
-        return row;
+      return row;
     }).then(function (data) {
-        draw(data);
+      draw(data);
     });
 
     // Draw the data
     function draw(data) {
-        // Extract the list of dimensions
-        dimensions = d3.keys(data[0]).filter((d) => d != "" && d != "target");
+      // Extract the list of dimensions
+      dimensions = d3.keys(data[0]).filter((d) => d != "" && d != "target");
 
-        qualities = [0.0, 1.0, 2.0];
+      qualities = [0.0, 1.0, 2.0];
 
-        // Create color scheme for quality
-        var color = d3.scaleOrdinal().domain(qualities).range(d3.schemeSet2);
+      // Create color scheme for quality
+      var color = d3.scaleOrdinal().domain(qualities).range(d3.schemeSet2);
 
-        // Linear scale for each dimension
-        var y = {};
-        for (i in dimensions) {
+      // Linear scale for each dimension
+      var y = {};
+      for (i in dimensions) {
         dimension = dimensions[i];
         y[dimension] = d3
-            .scaleLinear()
-            .domain(
+          .scaleLinear()
+          .domain(
             d3.extent(data, function (d) {
-                return +d[dimension];
+              return +d[dimension];
             })
-            )
-            .range([height, margin.top]);
-        }
+          )
+          .range([height, margin.top]);
+      }
 
-        // Build the X scale -> it find the best position for each Y axis
-        x = d3
+      // Build the X scale -> it find the best position for each Y axis
+      x = d3
         .scalePoint()
         .range([0, width - margin.right])
         .padding(1)
         .domain(dimensions);
 
-        // Row as input, return x and y coordinates of the line
-        function path(d) {
+      // Row as input, return x and y coordinates of the line
+      function path(d) {
         return d3.line()(
-            dimensions.map(function (dimension) {
+          dimensions.map(function (dimension) {
             return [x(dimension), y[dimension](d[dimension])];
-            })
+          })
         );
-        }
+      }
 
-        // Draw the lines as path elements
-        svg
+      // Create title
+      svg
+        .append("text")
+        .attr("class", "title")
+        .attr("x", width / 2)
+        .attr("y", 0)
+        .style("text-anchor", "middle")
+        .text("178 different wines and their characteristics");
+
+      // Draw the lines as path elements
+      svg
         .selectAll("myPath")
         .data(data)
         .enter()
         .append("path")
         .attr("d", path)
+        .attr("class", "line")
         .style("fill", "none")
         .style("stroke", (d) => color(parseFloat(d.target)))
-        .style("opacity", 0.7);
-
-        // Draw the axis:
-        svg
+        .style("opacity", std_opacity_line);
+      // Draw axis
+      svg
         .selectAll("myAxis")
-        // For each dimension of the dataset I add a 'g' element:
         .data(dimensions)
         .enter()
         .append("g")
         // Translate to correct position on the x axis
         .attr("transform", function (d) {
-            return "translate(" + x(d) + ")";
+          return "translate(" + x(d) + ")";
         })
+        .attr("class", "dim-ax")
+        .style("opacity", std_opacity_axis)
         .each(function (d) {
-            d3.select(this).call(d3.axisLeft().scale(y[d]));
+          d3.select(this).call(d3.axisLeft().scale(y[d]));
         })
         // Label axis
         .append("text")
-        .style("text-anchor", "middle")
-        .attr("y", margin.top - 5)
+        .style("text-anchor", "start")
+        .attr("x", -10)
+        .attr("y", margin.top)
+        .attr("class", "dim-ax")
+        .style("opacity", std_opacity_axis)
         .text(function (d) {
-            return d;
+          return d;
         })
-        .style("fill", "black");
+        .style("fill", "black")
+        .attr("transform", "rotate(-20)");
 
-        // Add legend
-        var size = 20;
-        svg
+      // Add legend
+      var size = 20;
+      svg
         .append("text")
         .attr("x", width - 50)
-        .attr("y", margin.top - 5)
+        .attr("y", height / 2 - 10)
         .text("Quality class");
-        svg
+      svg
         .selectAll("myrect")
         .data(qualities)
         .enter()
         .append("rect")
         .attr("x", width - 50)
         .attr("y", function (d, i) {
-            return margin.top + i * (size + 5);
+          return height / 2 + i * (size + 5);
         })
         .attr("width", size)
         .attr("height", size)
         .style("fill", (d) => color(d));
-        svg
+      svg
         .selectAll("mylabels")
         .data(qualities)
         .enter()
         .append("text")
         .attr("x", width - 50 + size * 1.2)
         .attr("y", function (d, i) {
-            return margin.top + i * (size + 5) + (3 * size) / 4;
+          return height / 2 + i * (size + 5) + (3 * size) / 4;
         })
         .style("fill", (d) => color(d))
         .text((d) => d)
         .attr("text-anchor", "left")
         .style("alignment-baseline", "middle");
 
-        // when the input range changes update the circle 
-        d3.select("#form-").on("input", function() {
+      // when the input range changes update the circle
+      d3.select("#form-").on("input", function () {
         update(+this.value);
-        });
+      });
 
-        // Set up dimensions for filter
-        filter_dimensions = ["none"].concat(dimensions);
-        // Add dimensions to dropdown menu
-        const select  = d3.select("#filter-attribute").on("change", updateFilterInterface),
-        options = select.selectAll('option').data(filter_dimensions).enter().append("option").text((d) => d);
+      // Set up dimensions for filter
+      filter_dimensions = ["none"].concat(dimensions);
+      // Add dimensions to dropdown menu
+      const select = d3
+          .select("#filter-attribute")
+          .on("change", updateFilterInterface),
+        options = select
+          .selectAll("option")
+          .data(filter_dimensions)
+          .enter()
+          .append("option")
+          .text((d) => d);
 
-        // Define min and max sliders
-        const min = d3.select("#filter-min");
-        const max = d3.select("#filter-max");
-        d3.select("#filter-min").on("input", function() {
-            val = +this.value;
-            if (val > max.property("value")) {
-                this.value = +max.property("value");
-                val = +max.property("value");
-            }
-            d3.select("#filter-min-value").text(val.toFixed(2));
-        });
-        d3.select("#filter-max").on("input", function() {
-            val = +this.value;
-            if (val < min.property("value")) {
-                this.value = min.property("value");
-                val = +min.property("value");
-            }
-            d3.select("#filter-max-value").text(val.toFixed(2));
-        });
-
-        // If dimension from dropdown menu is selected, adjust sliders or reset filter view if "none" is selected
-        function updateFilterInterface() {
-            dimension = select.property("value")
-            if (dimension != "none") {
-                scale = y[dimension];
-                domain = d3.extent(data, (d) => +d[dimension]);
-                d3.select("#filter-min").property("min", domain[0]).property("max", domain[1]).property("value", domain[0]);
-                d3.select("#filter-min-value").text(domain[0].toFixed(2));
-                d3.select("#filter-max").property("min", domain[0]).property("max", domain[1]).property("value", domain[1]);
-                d3.select("#filter-max-value").text(domain[1].toFixed(2));
-                // Make sliders visible
-                d3.select("#min-cont").style("visibility", "visible");
-                d3.select("#max-cont").style("visibility", "visible");
-            } else {
-                // Reset the filter
-                reset();
-            }
+      // Define min and max sliders
+      const min = d3.select("#filter-min");
+      const max = d3.select("#filter-max");
+      d3.select("#filter-min").on("input", function () {
+        val = +this.value;
+        if (val > max.property("value")) {
+          this.value = +max.property("value");
+          val = +max.property("value");
         }
-
-        function reset() {
-            // Hide sliders
-            d3.select("#min-cont").style("visibility", "hidden");
-            d3.select("#max-cont").style("visibility", "hidden");
+        d3.select("#filter-min-value").text(val.toFixed(2));
+        // Adjust lines
+        filterLines();
+      });
+      d3.select("#filter-max").on("input", function () {
+        val = +this.value;
+        if (val < min.property("value")) {
+          this.value = min.property("value");
+          val = +min.property("value");
         }
+        d3.select("#filter-max-value").text(val.toFixed(2));
+        // Adjust lines
+        filterLines();
+      });
+
+      // If dimension from dropdown menu is selected, adjust sliders or reset filter view if "none" is selected
+      function updateFilterInterface() {
+        reset();
+        dimension = select.property("value");
+        if (dimension != "none") {
+          scale = y[dimension];
+          domain = d3.extent(data, (d) => +d[dimension]);
+          d3.select("#filter-min")
+            .property("min", domain[0])
+            .property("max", domain[1])
+            .property("value", domain[0]);
+          d3.select("#filter-min-value").text(domain[0].toFixed(2));
+          d3.select("#filter-max")
+            .property("min", domain[0])
+            .property("max", domain[1])
+            .property("value", domain[1]);
+          d3.select("#filter-max-value").text(domain[1].toFixed(2));
+          // Make sliders visible
+          d3.select("#min-cont").style("visibility", "visible");
+          d3.select("#max-cont").style("visibility", "visible");
+          // Emphasize active dimension
+          d3.selectAll(".dim-ax").style("opacity", function (d, i) {
+            return d != dimension ? 0.5 : std_opacity_axis;
+          });
+        } else {
+          // Reset the filter
+          reset();
+        }
+      }
+
+      function filterLines() {
+        dimension = select.property("value");
+        min_val = min.property("value");
+        max_val = max.property("value");
+        svg.selectAll(".line").style("opacity", function (d, i) {
+          return +d[dimension] <= max_val && +d[dimension] >= min_val
+            ? std_opacity_line
+            : 0;
+        });
+      }
+
+      function reset() {
+        // Hide sliders
+        d3.select("#min-cont").style("visibility", "hidden");
+        d3.select("#max-cont").style("visibility", "hidden");
+        // Make all lines visible again
+        svg.selectAll(".line").style("opacity", std_opacity_line);
+        // Reset axis opacities
+        svg.selectAll(".dim-ax").style("opacity", 1);
+      }
     }
-    </script>
-    </html>
+  </script>
+</html>
