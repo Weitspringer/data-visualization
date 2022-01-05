@@ -18,7 +18,7 @@
     // DISCLAIMER: Adapted template from https://www.d3-graph-gallery.com/graph/stackedarea_template.html
 
     // Dimensions with margins
-    var margin = { top: 60, right: 320, bottom: 50, left: 50 },
+    var margin = { top: 60, right: 300, bottom: 50, left: 50 },
       width = 1500 - margin.left - margin.right,
       height = 700 - margin.top - margin.bottom;
 
@@ -31,7 +31,7 @@
       .append("g")
       .attr("transform", "translate(" + margin.left + "," + margin.top + ")");
     
-    // Create variables for cumulative data
+    // Create variables for cumulative data, because total amount of energy has to be visualized
     var sp = 0;
     var builc = 0;
     var batc = 0;
@@ -40,21 +40,26 @@
     var pnf = 0;
     var total = 0;
 
-    // Read csv data
+    // Read csv data and translate data in order to match the requirements of the task
     d3.csv("/data/EnergyConsumption.csv", function (row) {
+      // Solar production
       sp += parseFloat(row["E_S (kW)"]);
+      // Building energy consumption
       builc += parseFloat(row["E_C (kW)"]);
+      // Split battery data into 2 separate features - battery charging and battery consumption
       batc += parseFloat(row["E_B (kW)"] > 0 ? row["E_B (kW)"] : 0);
       batd += parseFloat(row["E_B (kW)"] < 0 ? Math.abs(row["E_B (kW)"]) : 0);
+      // Split power network data into 2 separate features - network feed and network consumption
       pnp += parseFloat(row["E_N (kW)"] > 0 ? row["E_N (kW)"] : 0);
       pnf += parseFloat(row["E_N (kW)"] < 0 ? Math.abs(row["E_N (kW)"]) : 0);
+      // Adjust the total amount of all features
       total +=
         parseFloat(row["E_S (kW)"]) +
         parseFloat(row["E_C (kW)"]) +
         Math.abs(row["E_B (kW)"]) +
         Math.abs(row["E_N (kW)"]);
       return {
-        // Return the data and normalize the features
+        // Return the data and normalize the features, because area chart has to be normalized
         timestamp: new Date(row["timestamp"]),
         solar_production: sp / total,
         building_consumption: builc / total,
@@ -80,11 +85,12 @@
       ];
       // Create structure for labeling
       var legend_labels = [
-        {key: "solar_production", value: "Solar production (relative)"},
-        {key: "building_consumption", value: "Building consumption (relative)"},
-        {key: "battery_charging", value: "Battery charging (relative)"},
-        {key: "power_network_purchase", value: "Purchased power from power network (relative)"},
-        {key: "power_network_feed", value: "Fed power into power network (relative)"}
+        {key: "solar_production", value: "Solar production"},
+        {key: "building_consumption", value: "Building consumption"},
+        {key: "battery_charging", value: "Battery charging"},
+        {key: "battery_draining", value: "Battery consumption"},
+        {key: "power_network_purchase", value: "Energy consumed from power network"},
+        {key: "power_network_feed", value: "Energy fed into power network"}
       ];
 
       // Define color palette
@@ -122,7 +128,7 @@
         .attr("text-anchor", "end")
         .attr("x", 0)
         .attr("y", -20)
-        .text("Percentage")
+        .text("Cumulative amount (normalized)")
         .attr("text-anchor", "start");
 
       // Add a clip path
