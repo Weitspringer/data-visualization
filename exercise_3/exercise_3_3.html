@@ -1,0 +1,153 @@
+<!DOCTYPE html>
+<html lang="eng">
+  <head>
+    <meta charset="UTF-8" />
+    <title>Interactive Parallel Coordinates Plot</title>
+    <script src="https://d3js.org/d3.v5.min.js"></script>
+    <style>
+      text {
+        font-family: "Ubuntu", sans-serif;
+        font-size: 10pt;
+      }
+      .title {
+        font-family: "Ubuntu", sans-serif;
+        font-size: 20pt;
+        font-weight: 300;
+      }
+    </style>
+  </head>
+  <body>
+    <div id="chart"></div>
+  </body>
+  <script>
+    // Dimensions with margins
+    var margin = { top: 40, right: 20, bottom: 50, left: 0 },
+      width = 1200 - margin.left - margin.right,
+      height = 500 - margin.top - margin.bottom;
+
+    // Insert svg and group
+    var svg = d3
+      .select("#chart")
+      .append("svg")
+      .attr("width", width + margin.left + margin.right)
+      .attr("height", height + margin.top + margin.bottom)
+      .append("g")
+      .attr("transform", "translate(" + margin.left + "," + margin.top + ")");
+
+    // Read csv data
+    d3.csv("/data/Wine.csv", function (row) {
+      return row;
+    }).then(function (data) {
+      draw(data);
+    });
+
+    // Draw the data
+    function draw(data) {
+      console.log(data);
+      // Extract the list of dimensions
+      dimensions = d3.keys(data[0]).filter((d) => d != "" && d != "target");
+
+      qualities = [0.0, 1.0, 2.0];
+
+      // Create color scheme for quality
+      var color = d3.scaleOrdinal().domain(qualities).range(d3.schemeSet2);
+
+      // Linear scale for each dimension
+      var y = {};
+      for (i in dimensions) {
+        dimension = dimensions[i];
+        y[dimension] = d3
+          .scaleLinear()
+          .domain(
+            d3.extent(data, function (d) {
+              return +d[dimension];
+            })
+          )
+          .range([height, margin.top]);
+      }
+
+      // Build the X scale -> it find the best position for each Y axis
+      x = d3
+        .scalePoint()
+        .range([0, width - margin.right])
+        .padding(1)
+        .domain(dimensions);
+
+      // Row as input, return x and y coordinates of the line
+      function path(d) {
+        return d3.line()(
+          dimensions.map(function (dimension) {
+            return [x(dimension), y[dimension](d[dimension])];
+          })
+        );
+      }
+
+      // Draw the lines as path elements
+      svg
+        .selectAll("myPath")
+        .data(data)
+        .enter()
+        .append("path")
+        .attr("d", path)
+        .style("fill", "none")
+        .style("stroke", (d) => color(parseFloat(d.target)))
+        .style("opacity", 0.7);
+
+      // Draw the axis:
+      svg
+        .selectAll("myAxis")
+        // For each dimension of the dataset I add a 'g' element:
+        .data(dimensions)
+        .enter()
+        .append("g")
+        // Translate to correct position on the x axis
+        .attr("transform", function (d) {
+          return "translate(" + x(d) + ")";
+        })
+        .each(function (d) {
+          d3.select(this).call(d3.axisLeft().scale(y[d]));
+        })
+        // Label axis
+        .append("text")
+        .style("text-anchor", "middle")
+        .attr("y", margin.top - 5)
+        .text(function (d) {
+          return d;
+        })
+        .style("fill", "black");
+
+      // Add legend
+      var size = 20;
+      svg
+        .append("text")
+        .attr("x", width - 50)
+        .attr("y", margin.top - 5)
+        .text("Quality class");
+      svg
+        .selectAll("myrect")
+        .data(qualities)
+        .enter()
+        .append("rect")
+        .attr("x", width - 50)
+        .attr("y", function (d, i) {
+          return margin.top + i * (size + 5);
+        })
+        .attr("width", size)
+        .attr("height", size)
+        .style("fill", (d) => color(d));
+      svg
+        .selectAll("mylabels")
+        .data(qualities)
+        .enter()
+        .append("text")
+        .attr("x", width - 50 + size * 1.2)
+        .attr("y", function (d, i) {
+          return margin.top + i * (size + 5) + (3 * size) / 4;
+        })
+        .style("fill", (d) => color(d))
+        .text((d) => d)
+        .attr("text-anchor", "left")
+        .style("alignment-baseline", "middle");
+    }
+  </script>
+</html>
