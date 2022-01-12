@@ -2,12 +2,17 @@
 <html lang="eng">
   <head>
     <meta charset="UTF-8" />
-    <title>Normalized Area Chart for Energy Consumption</title>
+    <title>Normalized Stacked Area Chart for Energy Consumption</title>
     <script src="https://d3js.org/d3.v5.min.js"></script>
     <style>
       text {
-        font-family: "Yanone Kaffeesatz", sans-serif;
-        font-size: 5pt;
+        font-family: "Ubuntu", sans-serif;
+        font-size: 10pt;
+      }
+      .title {
+        font-family: "Ubuntu", sans-serif; 
+        font-size: 20pt; 
+        font-weight: 300;
       }
     </style>
   </head>
@@ -15,32 +20,246 @@
     <div id="chart"></div>
   </body>
   <script>
+    // DISCLAIMER: Adapted template from https://www.d3-graph-gallery.com/graph/stackedarea_template.html
+
     // Dimensions with margins
-    var margin = { top: 60, right: 230, bottom: 50, left: 50 },
-      width = 800 - margin.left - margin.right,
-      height = 540 - margin.top - margin.bottom;
+    var margin = { top: 30, right: 300, bottom: 50, left: 35 },
+      width = 1500 - margin.left - margin.right,
+      height = 700 - margin.top - margin.bottom;
+
     // Insert svg and group
-    var svg = d3.select("chart")
-                .append("svg")
-                .attr("width", width + margin.left + margin.right)
-                .attr("height", height + margin.top + margin.bottom)
-                .append("g")
-                .attr("transform", "translate(" + margin.left + "," + margin.top + ")");
-    // Read csv data
+    var svg = d3
+      .select("#chart")
+      .append("svg")
+      .attr("width", width + margin.left + margin.right)
+      .attr("height", height + margin.top + margin.bottom)
+      .append("g")
+      .attr("transform", "translate(" + margin.left + "," + margin.top + ")");
+
+    // Create variables for cumulative data, because total amount of energy has to be visualized
+    var sp = 0;
+    var builc = 0;
+    var batc = 0;
+    var batd = 0;
+    var pnp = 0;
+    var pnf = 0;
+    var total = 0;
+
+    // Read csv data and translate data in order to match the requirements of the task
     d3.csv("/data/EnergyConsumption.csv", function (row) {
+      // Solar production
+      sp += parseFloat(row["E_S (kW)"]);
+      // Building energy consumption
+      builc += parseFloat(row["E_C (kW)"]);
+      // Split battery data into 2 separate features - battery charging and battery consumption
+      batc += parseFloat(row["E_B (kW)"] > 0 ? row["E_B (kW)"] : 0);
+      batd += parseFloat(row["E_B (kW)"] < 0 ? Math.abs(row["E_B (kW)"]) : 0);
+      // Split power network data into 2 separate features - network feed and network consumption
+      pnp += parseFloat(row["E_N (kW)"] > 0 ? row["E_N (kW)"] : 0);
+      pnf += parseFloat(row["E_N (kW)"] < 0 ? Math.abs(row["E_N (kW)"]) : 0);
+      // Adjust the total amount of all features
+      total +=
+        parseFloat(row["E_S (kW)"]) +
+        parseFloat(row["E_C (kW)"]) +
+        Math.abs(row["E_B (kW)"]) +
+        Math.abs(row["E_N (kW)"]);
       return {
-        timestamp: row.get("timestamp"),
-        solar_production: row.get("E_S (kW)"),
-        building_consumption: row.get("E_C (kW)"),
-        battery: row.get("E_B (kW)"),
-        power_network: row.get("E_N (kW)"),
+        // Return the data and normalize the features, because area chart has to be normalized
+        timestamp: new Date(row["timestamp"]),
+        solar_production: sp / total,
+        building_consumption: builc / total,
+        battery_charging: batc / total,
+        battery_draining: batd / total,
+        power_network_purchase: pnp / total,
+        power_network_feed: pnf / total,
       };
     }).then(function (data) {
-      // Preprocess data
-      // Create vector for battery charging
-      // Create vector for battery draining
-      // Create vector for network demand
-      // Create vector for network supply
+      draw(data);
     });
+
+    // Draw the data
+    function draw(data) {
+      // Define group keys
+      var keys = [
+        "solar_production",
+        "building_consumption",
+        "battery_charging",
+        "battery_draining",
+        "power_network_purchase",
+        "power_network_feed",
+      ];
+      // Create structure for labeling
+      var legend_labels = [
+        { key: "solar_production", value: "Solar production" },
+        { key: "building_consumption", value: "Building consumption" },
+        { key: "battery_charging", value: "Battery charging" },
+        { key: "battery_draining", value: "Battery consumption" },
+        {
+          key: "power_network_purchase",
+          value: "Energy consumed from power network",
+        },
+        { key: "power_network_feed", value: "Energy fed into power network" },
+      ];
+      legend_labels.reverse();
+
+      // Define color palette
+      var color = d3.scaleOrdinal().domain(keys).range(d3.schemeSet2);
+
+      // Stack data
+      var stackedData = d3.stack().keys(keys)(data);
+
+      // Add X axis
+      var x = d3
+        .scaleTime()
+        .domain(d3.extent(data, (d) => d.timestamp))
+        .range([0, width]);
+      var xAxis = svg
+        .append("g")
+        .attr("transform", "translate(0," + height + ")")
+        .call(d3.axisBottom(x).ticks(5));
+
+      // Add X axis label
+      svg
+        .append("text")
+        .attr("text-anchor", "end")
+        .attr("x", width)
+        .attr("y", height + 40)
+        .text("Time");
+
+      // Add Y axis
+      var y = d3.scaleLinear().domain([0, 1]).range([height, margin.top]);
+      svg
+        .append("g")
+        .call(d3.axisLeft(y).ticks(10));
+
+      // Add Y axis label
+      svg
+        .append("text")
+        .attr("text-anchor", "start")
+        .attr("x", 0)
+        .attr("y", 20)
+        .text("Cumulative amount (normalized)")
+
+      // Create title
+      svg
+        .append("text")
+        .attr("class", "title")
+        .attr("x", width / 2)
+        .attr("y", 10)
+        .style("text-anchor", "middle")
+        .text("Energy consumption and production, 2021-03-11");
+
+      // Add a clip path
+      var clip = svg
+        .append("defs")
+        .append("svg:clipPath")
+        .attr("id", "clip")
+        .append("svg:rect")
+        .attr("width", width)
+        .attr("height", height - margin.top)
+        .attr("x", 0)
+        .attr("y", margin.top);
+
+      // Add brushing
+      var brush = d3
+        .brushX() // Brushing along x axis
+        .extent([
+          [0, 0],
+          [width, height],
+        ]) // Initialization: Select whole graph area
+        .on("end", updateChart); // Each time the brush selection changes, trigger the 'updateChart' function
+
+      // Create the chart variable: where both the area and the brush take place
+      var areaChart = svg.append("g").attr("clip-path", "url(#clip)");
+
+      // Area generator
+      var area = d3
+        .area()
+        .x((d) => x(d.data.timestamp))
+        .y0((d) => y(d[0]))
+        .y1((d) => y(d[1]));
+
+      // Show the areas
+      areaChart
+        .selectAll("mylayers")
+        .data(stackedData)
+        .enter()
+        .append("path")
+        .attr("class", (d) => "myArea " + d.key)
+        .style("fill", (d) => color(d.key))
+        .attr("d", area);
+
+      // Add the brushing
+      areaChart.append("g").attr("class", "brush").call(brush);
+
+      var idleTimeout;
+      function idled() {
+        idleTimeout = null;
+      }
+
+      // A function that update the chart for given boundaries
+      function updateChart() {
+        extent = d3.event.selection;
+
+        // If no selection, back to initial coordinate. Otherwise, update X axis domain
+        if (!extent) {
+          if (!idleTimeout) return (idleTimeout = setTimeout(idled, 350)); // This allows to wait a little bit
+          x.domain(d3.extent(data, (d) => d.timestamp));
+        } else {
+          x.domain([x.invert(extent[0]), x.invert(extent[1])]);
+          areaChart.select(".brush").call(brush.move, null); // This remove the grey brush area as soon as the selection has been done
+        }
+
+        // Update axis and area position
+        xAxis.transition().duration(1000).call(d3.axisBottom(x).ticks(5));
+        areaChart.selectAll("path").transition().duration(1000).attr("d", area);
+      }
+
+      // Highlight specific area
+      var highlight = function (d) {
+        // reduce opacity of all groups
+        d3.selectAll(".myArea").style("opacity", 0.1);
+        // expect the one that is hovered
+        d3.select("." + d.key).style("opacity", 1);
+      };
+
+      // Undo highlight
+      var noHighlight = function (d) {
+        d3.selectAll(".myArea").style("opacity", 1);
+      };
+
+      // Add legend
+      var size = 20;
+      svg
+        .selectAll("myrect")
+        .data(legend_labels)
+        .enter()
+        .append("rect")
+        .attr("x", width + 20)
+        .attr("y", function (d, i) {
+          return margin.top + i * (size + 5);
+        })
+        .attr("width", size)
+        .attr("height", size)
+        .style("fill", (d) => color(d.key))
+        .on("mouseover", highlight)
+        .on("mouseleave", noHighlight);
+
+      svg
+        .selectAll("mylabels")
+        .data(legend_labels)
+        .enter()
+        .append("text")
+        .attr("x", width + 20 + size * 1.2)
+        .attr("y", function (d, i) {
+          return margin.top + i * (size + 5) + 3 * size / 4;
+        })
+        .style("fill", (d) => color(d.key))
+        .text((d) => d.value)
+        .attr("text-anchor", "left")
+        .style("alignment-baseline", "middle")
+        .on("mouseover", highlight)
+        .on("mouseleave", noHighlight);
+    }
   </script>
 </html>

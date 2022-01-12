@@ -5,16 +5,23 @@ This complicates the reading of the chart for the user and furthermore distorts 
 percentages of "Asian" and "Other" disappear completely in 2010). 
 
 Bad visualization No. 7:
-Image of the doctor has high visual complexity and is obsolete, the height of pairwise doctors 
-can't be compared accurately with the human eye.
-Additionally, the timeline is not linearly scaled so the images fit next to each other without overlapping.
+Image of the doctor has high visual complexity and is obsolete, the height of doctors 
+can't be compared pairwise in an accurate manner with the human eye.
+Additionally, the timeline is not linearly scaled. This was done so the images fit next to each other without overlapping, but distorts the timeline.
 
 Bad visualization No. 9:
-1) Wordy description of the axes
-2) Thickness not explained but used
-3) x-axis not numerically scaled - which side is increase, which is decrease (-> user has to guess)
+I discovered 3 aspects, but explain only 3) in detail:
+1) Complex description of the axes
+2) Line thickness used but not explained
+3) x-axis not numerically scaled - it is unclear to the user which interval of the axis maps increase and decrease respectively. 
+The user has to make an educated guess by reading the events.
+Overall, the visualization is rather complex and not easy to read for laymen.
 
 Bad visualization No. 10:
+Minor aspect: 
 1) Eye is same color as the specified color for a segment
-2) 1960: 1% Asian or 1% other? Not clear, radius of segment for each group is too low
-   and therefore can't be properly visualized.
+Another issue: 
+2) 1960: "Others" group is not visualized. The radius of segment for this group is probably too low
+   and therefore can't be properly visualized with a pie chart. 
+   Omitting the segment "Others" causes the impression that 1960 the population solely consists of 
+   "Asians", "Blacks", "Hispanics" and "Whites". This is probably not true.
