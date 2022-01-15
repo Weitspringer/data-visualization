@@ -1,0 +1,28 @@
+Number 11:
+Information overhead. User has to convert from avocado toasts to dollers with two different factors - 
+amount of avocado toasts can't be compared intuitively.
+Secondly, the depiction of dollars in the bottom quarter of the plot uses too much space and the amount of
+dollar bills is not proportional to the avocado toast price.
+Furthermore, the methaphor of one avocado toast for 100 avocado toasts is not fitting.
+
+Number 12:
+The governors' faces are used as glyphs, but the size of the glyphs does not correlate with the salary. 
+The state names are not visualized. Therefore, the salaries of governors from different states 
+can't be compared intuitively. The visualization fails to provide the user with relevant information 
+and comparable depictions. Additionally, it is not clear to which governor the footnote refers to until 
+actively searching the mentioned governor. This might confuse and annoy the user.
+
+Number 13:
+First of all, this visualization uses too much decorative elements (3D effects, color ramp, etc.), 
+which clutters the visualization and makes it harder to read.
+But much more serious is the distortion of the data:
+The data for Netflix is from June 2011 to November 2013 and the data for Tesla is from January 2019 to today.
+Yet the line charts have the same starting point. The end point of the Tesla stock is deliberately (?) set way to
+early to match the decreasing stock of Netflix in 2011 in order to support the statement of the title suggestively.
+This visualzation does not provide the user with information, but tries to actively influence the user's 
+interpretation of the data.
+
+Number 14:
+Coloring of imports and exports are not consistent. This makes it harder to compare the U.S. trade with China and Taiwan.
+Furthermore, the visualization seems to be a stacked line chart. But it isn't, which can be detected only 
+in the left half of the visualization during 1976.
