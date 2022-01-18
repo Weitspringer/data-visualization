@@ -1,0 +1,124 @@
+<!DOCTYPE html>
+<html lang="eng">
+
+<head>
+  <meta charset="UTF-8" />
+  <title>Hierarchical Structure of a Software Project</title>
+  <script src="https://d3js.org/d3.v5.min.js"></script>
+  <style>
+    body {
+      font: 10px sans-serif;
+      
+      position: relative;
+    }
+
+    .node {
+      box-sizing: border-box;
+      position: absolute;
+      overflow: hidden;
+      border-style: solid;
+      border-width: 1px;
+      color: rgba(0, 0, 0, 0.8);
+    }
+
+    .node-label {
+      padding: 4px;
+      line-height: 1em;
+      white-space: pre;
+    }
+
+    .node-value {
+      color: rgba(255, 255, 255, 1);
+      font-size: 9px;
+      margin-top: 1px;
+    }
+  </style>
+</head>
+
+<body>
+  <div id="chart"></div>
+</body>
+<script>
+  // Dimensions with margins
+  let margin = { top: 30, right: 30, bottom: 50, left: 35 },
+    width = 1200 - margin.left - margin.right,
+    height = 700 - margin.top - margin.bottom;
+
+  // Determine the string which splits the elements in hierarchy
+  const splitter = "\\";
+
+  // Define stratifier
+  const stratify = d3.stratify()
+    .parentId(function (d) { return d.name.substring(0, d.name.lastIndexOf(splitter)); })
+    .id((d) => d.name);
+
+  // Define treemap
+  const treemap = d3.treemap()
+    .size([width, height])
+    .paddingOuter(1)
+
+  // Variable for maximum number of commented lines in a file
+  let max_number_noc = 0;
+
+  // Create set to track directory structure
+  let directories = new Set();
+
+  // Read csv data and translate data in order to match the requirements of the task
+  d3.csv("/data/BasicMetrics-Teaching-globjects.csv", function (row) {
+    // Add folders and subfolders to set
+    let splitted = row.name.split(splitter);
+    let akku = "";
+    for (i = 0; i < splitted.length - 1; i++) {
+      akku += i > 0 ? splitter + splitted[i] : splitted[i];
+      directories.add(akku);
+    }
+    // Determine maximum number if NoC
+    max_number_noc = +row.NoC > max_number_noc ? +row.NoC : max_number_noc;
+    // Return the data
+    return row;
+  }).then(function (data) {
+    // Insert information about directory structure in data in order the tree gets constructed correctly
+    let dir_arr = Array.from(directories)
+    let dir_dict_arr = dir_arr.map(function (dir) {
+      return { name: dir, LoC: "", NoC: "" }
+    });
+    data = dir_dict_arr.concat(data)
+
+    // Stratify data
+    var root = stratify(data)
+      .sum(function (d) { return d.LoC; })
+      .sort(function (a, b) { return b.height - a.height || b.value - a.value; });
+
+    // Build the treemap
+    treemap(root);
+
+    // Draw the treemap
+    d3.select("body")
+      .selectAll(".node")
+      .data(root.leaves()) // Every leaf is represented by a div
+      .enter().append("div") // Create divs for each leaf
+      .attr("class", "node")
+      .attr("title", function (d) { 
+        return d.data.name.substring(d.data.name.lastIndexOf(splitter) + 1).split(/(?=[A-Z][^A-Z])/g).join("") + "\n" +
+          "Hierarchy: " + d.data.name.substring(0, d.data.name.lastIndexOf(splitter)) + "\n" +
+          "Lines of Code: " + d.data.LoC + "\n" +
+          "Commented lines: " + d.data.NoC; }) // Title appears as tooltip
+      .style("left", function (d) { return d.x0 + "px"; })
+      .style("top", function (d) { return d.y0 + "px"; })
+      .style("width", function (d) { return d.x1 - d.x0 + "px"; })
+      .style("height", function (d) { return d.y1 - d.y0 + "px"; })
+      .style("background", (d) => colormap_noc(d.data.NoC)) // Color background with respect to commented lines of the corresponding file
+      .append("div")
+      .attr("class", "node-label")
+      .text(function (d) { return d.data.name.substring(d.data.name.lastIndexOf(splitter) + 1).split(/(?=[A-Z][^A-Z])/g).join("\n"); }) // This appears as text in every div
+      .append("div")
+  });
+
+  // Returns color value for amount of commented lines
+  function colormap_noc(commented_lines) {
+    return d3.interpolateCool(commented_lines / max_number_noc); // Normalize and interpolate
+  }
+
+</script>
+
+</html>
