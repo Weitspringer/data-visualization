@@ -1,6 +1,7 @@
 from sklearn.decomposition import PCA
 from sklearn.manifold import TSNE
 import pandas as pd
+import numpy as np
 import matplotlib.pyplot as plt
 import seaborn as sns
 
@@ -27,9 +28,30 @@ tsne = TSNE(n_components=2,
 tsne_result = tsne.fit_transform(approximation)
 
 # Draw result
-tsne_result_df = pd.DataFrame({'tsne_1': tsne_result[:,0], 'tsne_2': tsne_result[:,1], 'label': labels})
+conditions = [labels == 0,
+            labels == 1,
+            labels == 2,
+            labels == 3,
+            labels == 4,
+            labels == 5,
+            labels == 6,
+            labels == 7,
+            labels == 8,
+            labels == 9]
+choice = ["T-shirt/top",
+        "Trouser",
+        "Pullover",
+        "Dress",
+        "Coat",
+        "Sandal",
+        "Shirt",
+        "Sneaker",
+        "Bag",
+        "Ankle boot"]
+
+tsne_result_df = pd.DataFrame({'tsne_1': tsne_result[:,0], 'tsne_2': tsne_result[:,1], 'label': np.select(conditions, choice)})
 fig, ax = plt.subplots(1)
-sns.scatterplot(x='tsne_1', y='tsne_2', hue='label', palette='deep', data=tsne_result_df, ax=ax, s=120, linewidth=0)
+sns.scatterplot(x='tsne_1', y='tsne_2', hue='label', palette='bright', data=tsne_result_df, ax=ax, s=30, linewidth=0)
 lim = (tsne_result.min()-5, tsne_result.max()+5)
 ax.set_xlim(lim)
 ax.set_ylim(lim)
