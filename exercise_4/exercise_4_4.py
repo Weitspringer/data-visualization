@@ -14,7 +14,6 @@ labels = data['label']
 explained_variance = .95
 pca = PCA(explained_variance)
 lower_dim_data = pca.fit_transform(unlabeled_data)
-approximation = pca.inverse_transform(lower_dim_data)
 
 # Create t-SNE with parameters
 tsne = TSNE(n_components=2,
@@ -24,8 +23,9 @@ tsne = TSNE(n_components=2,
             init='random',
             random_state=0,
             n_jobs=-1)
+
 # Perform t-SNE
-tsne_result = tsne.fit_transform(approximation)
+tsne_result = tsne.fit_transform(lower_dim_data)
 
 # Draw result
 conditions = [labels == 0,
