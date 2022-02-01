@@ -1,0 +1,64 @@
+<!DOCTYPE html>
+<html lang="eng">
+
+<head>
+    <meta charset="UTF-8" />
+    <title>Title</title>
+    <script src="https://d3js.org/d3.v5.min.js"></script>
+    <style>
+        body {
+            font: 10px sans-serif;
+            font-family: "Ubuntu", sans-serif;
+            position: relative;
+        }
+
+        .title {
+            font-family: "Ubuntu", sans-serif;
+            font-size: 20pt;
+            font-weight: 300;
+        }
+    </style>
+</head>
+
+<body>
+    <div id="chart"></div>
+</body>
+<script>
+    // Dimensions with margins
+    let margin = { top: 60, right: 30, bottom: 0, left: 35 },
+        width = 1200 - margin.left - margin.right,
+        height = 700 - margin.top - margin.bottom;
+
+    // Read data and process it afterwards
+    d3.csv("/data/<file>", function (row) {
+        //--- Additional calculations ---//
+
+        return row;
+    }).then(function (data) {
+        //--- Preprocessing ---//
+
+        //--- Drawing ---//
+        // Insert svg and group
+        var svg = d3
+            .select("#chart")
+            .append("svg")
+            .attr("width", width + margin.left + margin.right)
+            .attr("height", height + margin.top + margin.bottom)
+            .append("g")
+            .attr("transform", "translate(" + margin.left + "," + margin.top + ")");
+
+        // Print the title
+        svg
+            .append("text")
+            .attr("class", "title")
+            .attr("x", width / 2)
+            .attr("y", 0)
+            .style("text-anchor", "middle")
+            .text("This is a title");
+
+        // Add visualization
+
+    });
+</script>
+
+</html>
