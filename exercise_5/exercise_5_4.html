@@ -1,0 +1,276 @@
+<!DOCTYPE html>
+<html lang="eng">
+
+<head>
+    <meta charset="UTF-8" />
+    <title>Social graph of A Song Of Ice And Fire</title>
+    <script src="https://d3js.org/d3.v5.min.js"></script>
+    <style>
+        body {
+            font: 10px sans-serif;
+            font-family: "Ubuntu", sans-serif;
+            position: relative;
+        }
+
+        .title {
+            font-family: "Ubuntu", sans-serif;
+            font-size: 20pt;
+            font-weight: 300;
+        }
+
+        .tooltip {
+            position: absolute;
+            z-index: 10;
+            visibility: hidden;
+            padding: 0.5em;
+            color: white;
+            border-radius: 5px;
+            background: #000;
+        }
+
+        .tooltip-name {
+            text-align: center;
+            font-size: 2em;
+        }
+    </style>
+</head>
+
+<body>
+    <div id="chart"></div>
+</body>
+<script>
+    // Dimensions with margins
+    let margin = { top: 60, right: 30, bottom: 0, left: 35 },
+        width = 1200 - margin.left - margin.right,
+        height = 800 - margin.top - margin.bottom;
+
+    // Define design constants
+    const selectTip = "Click to select node (hold to drag)";
+    const unselectTip = "Click to unselect (hold to drag)";
+    const defaultNodeOpacity = .9;
+    const fadedNodeOpacity = .1;
+    const defaultNodeColor = "#a393bf";
+    const linkColor = "darkgrey";
+    const defaultLinkOpacity = .8;
+    const fadedLinkOpacity = .1;
+
+    // Define data structure for houses
+    const houses = [
+        {name: "House Targaryen", color: "#020202", keyChains: [["Targaryen"], ["Jon", "Snow"]]},
+        {name: "House Lannister", color: "#934549", keyChains: [["Lannister"]]},
+        {name: "House Martell", color: "#f59b00", keyChains: [["Martell"]]},
+        {name: "House Tyrell", color: "#8fc18c", keyChains: [["Tyrell"]]},
+        {name: "House Stark", color: "#4b4955", keyChains: [["Stark"]]},
+        {name: "House Tully", color: "#2a6694", keyChains: [["Tully"]]},
+        {name: "House Arryn", color: "#761c68", keyChains: [["Arryn"]]},
+        {name: "House Baratheon", color: "#eac413", keyChains: [["Baratheon"]]},
+        {name: "No house", color: defaultNodeColor, keyChains: []},
+    ]
+
+    // Array for node data
+    let nodes = [];
+
+    // Read data and process it afterwards
+    d3.csv("/data/GoT.csv", function (row) {
+        //--- Additional calculations ---//
+        source = row.Source.replaceAll("-", " ");
+        target = row.Target.replaceAll("-", " ");
+        if (!nodes.includes(target)) {
+            nodes.push(target);
+        }
+        if (!nodes.includes(source)) {
+            nodes.push(source);
+        }
+        return {
+            target: target,
+            source: source,
+            weight: parseInt(row.weight)
+        };
+    }).then(function (links) {
+        //--- Preprocessing ---//
+        nodes = nodes.map(function (d) {
+            return {
+                id: d,
+                order: links.reduce((a, v) => v.source === d || v.target === d ? a + 1 : a, 0),
+                interacted: links.filter(l => l.source === d).map((l) => l.target).concat(links.filter(l => l.target === d).map((l) => l.source))
+            }
+        });
+        const weightExtent = d3.extent(links.map((d) => parseInt(d.weight)));
+        const orderExtent = d3.extent(nodes.map((d) => d.order));
+        const scaleLineWidth = d3.scaleLinear().domain(weightExtent).range([.4, 10]);
+        const scaleNodeArea = d3.scaleSqrt().domain(orderExtent).range([25, 400]);
+
+        //--- Drawing ---//
+        // Insert tooltip
+        var tooltip = d3.select("body")
+            .append("div")
+            .attr("class", "tooltip");
+
+        var nodeName = tooltip.append("div").attr("class", "tooltip-name");
+        var clickTip = tooltip.append("div").attr("class", "tooltip-click-tip");
+
+        // Insert svg and group
+        var svg = d3
+            .select("#chart")
+            .append("svg")
+            .attr("width", width + margin.left + margin.right)
+            .attr("height", height + margin.top + margin.bottom)
+            .append("g")
+            .attr("transform", "translate(" + margin.left + "," + margin.top + ")");
+
+        var container = svg.append("g")
+
+        // Print the title
+        svg
+            .append("text")
+            .attr("class", "title")
+            .attr("x", width / 2)
+            .attr("y", 0)
+            .style("text-anchor", "middle")
+            .text("Social graph of A Song Of Ice And Fire");
+
+        // Add visualization
+        var link = container
+            .selectAll("line")
+            .data(links)
+            .enter()
+            .append("line")
+            .style("stroke", linkColor)
+            .style("stroke-width", (d) => scaleLineWidth(d.weight))
+            .attr("opacity", defaultLinkOpacity);
+
+        // Initialize the nodes
+        var active;
+        var node = container
+            .selectAll("circle")
+            .data(nodes)
+            .enter()
+            .append("circle")
+            .style("fill", d => colorHouses(d.id))
+            .style("opacity", defaultNodeOpacity)
+            .attr("r", d => Math.sqrt(scaleNodeArea(d.order) / Math.PI))
+            .on("mouseover", function (d) {
+                nodeName.text(d.id);
+                tooltip.style("visibility", "visible");
+                if (active === d.id) {
+                    clickTip.text(unselectTip);
+                } else {
+                    clickTip.text(selectTip);
+                }
+            })
+            .on("click", function (d) {
+                if (active !== d.id) {
+                    active = d.id;
+                    clickTip.text(unselectTip);
+                    container.selectAll("circle")
+                        .style("opacity", n => d.interacted.includes(n.id) || n.id === d.id ? defaultNodeOpacity : fadedNodeOpacity)
+                        .style("stroke", n => n.id === d.id ? "red" : undefined)
+                    container.selectAll("line")
+                        .style("opacity", l => l.source.id === d.id || l.target.id === d.id ? defaultLinkOpacity : fadedLinkOpacity)
+                } else {
+                    active = null;
+                    clickTip.text(selectTip);
+                    container.selectAll("circle")
+                        .style("stroke", undefined)
+                        .style("opacity", defaultNodeOpacity);
+                    container.selectAll("line")
+                        .style("opacity", defaultLinkOpacity);
+                }
+            })
+            .on("mousemove", function (d) {
+                tooltip.style("top", (d3.event.pageY - 10) + "px").style("left", (d3.event.pageX + 10) + "px");
+            })
+            .on("mouseout", function (d) {
+                tooltip.style("visibility", "hidden");
+            });
+
+        const dragControls = d3
+            .drag()
+            .on("start", dragStarted)
+            .on("drag", dragged)
+            .on("end", dragEnded);
+        dragControls(node);
+
+        var simulation = d3.forceSimulation(nodes)
+            .force("link", d3.forceLink()
+                .id(function (d) { return d.id; })
+                .links(links)
+                .distance(5)
+            )
+            .force("charge", d3.forceManyBody().strength(-70))
+            .force("center", d3.forceCenter(width / 2, height / 2))
+            .force("y", d3.forceY(height / 2).strength(.3))
+            .force("x", d3.forceX(width / 2).strength(.2))
+            .on("tick", ticked);
+
+        const legend = d3
+            .select("svg")
+            .append("g")
+            .attr("class", "legend")
+            .attr("transform", `translate(${[85, 50]})`);
+
+        legend
+            .selectAll("g.item")
+            .data(houses)
+            .join("g")
+            .attr("class", "item")
+            .each(function (house, i) {
+                d3.select(this)
+                    .append("rect")
+                    .attr("y", i * 10)
+                    .attr("height", 8)
+                    .attr("width", 20)
+                    .style("fill", house.color);
+
+                d3.select(this)
+                    .append("text")
+                    .attr("y", i * 10 + 7)
+                    .attr("x", 24)
+                    .text(house.name);
+            });
+
+        function ticked() {
+            link
+                .attr("x1", function (d) { return d.source.x; })
+                .attr("y1", function (d) { return d.source.y; })
+                .attr("x2", function (d) { return d.target.x; })
+                .attr("y2", function (d) { return d.target.y; });
+
+            node
+                .attr("cx", function (d) { return d.x; })
+                .attr("cy", function (d) { return d.y; });
+        };
+
+        function dragStarted(d) {
+            if (!d3.event.active) simulation.alphaTarget(0.3).restart();
+            d.fx = d.x;
+            d.fy = d.y;
+        };
+
+        function dragged(d) {
+            d.fx = d3.event.x;
+            d.fy = d3.event.y;
+        };
+
+        function dragEnded(d) {
+            if (!d3.event.active) simulation.alphaTarget(0);
+            d.fx = null;
+            d.fy = null;
+        };
+
+        function colorHouses(name) {
+            var nameParts = name.split(" ");
+            let color = defaultNodeColor;
+            houses.forEach(house => {
+                house.keyChains.forEach(chain => {
+                    if (chain.length !== 0) {
+                        if (chain.map(key => nameParts.includes(key)).filter(b => b).length == chain.length) color = house.color;
+                    }
+                })
+            });
+            return color;
+        }
+    });
+</script>
+
+</html>
