@@ -20,6 +20,7 @@
 
         .tooltip {
             position: absolute;
+            font-size: 1.2em;
             z-index: 10;
             padding: 1em;
             color: white;
@@ -77,8 +78,8 @@
         var tooltip = d3.select("body")
             .append("div")
             .attr("class", "tooltip")
-        tooltip.html("Node: <br/>"
-            + "Movements: ")
+        tooltip.html("Location: <br/>"
+            + "Events: ")
 
         // Insert svg and group
         var svg = d3
@@ -111,58 +112,68 @@
             .attr("height", d => d.y1 - d.y0)
             .attr("width", sankey.nodeWidth())
             .on("mouseover", function (d) {
-                var movements = "<ul>";
+                var events = "<ul>";
                 nextNodes = d.sourceLinks;
                 svg
                     .selectAll("rect")
                     .attr("opacity", function (node) {
-                        return node.name === d.name || nextNodes.map(link => link.target.name).includes(node.name) ? 1 : .1;
+                        return node.name === d.name ? 1 : nextNodes.map(link => link.target.name).includes(node.name) ? .7 : .1;
                     });
+                if (d.name === "Survived") {
+                    events += "<li>"
+                        + d.targetLinks.map(link => link.value).reduce((tot, curr) => tot + curr, 0).toLocaleString("en-US")
+                        + " troops survived the march</li>";
+                }
+                if (d.name === "Dead") {
+                    events += "<li>"
+                        + d.targetLinks.map(link => link.value).reduce((tot, curr) => tot + curr, 0).toLocaleString("en-US")
+                        + " troops died in total</li>";
+                }
                 nextNodes.forEach(link => {
                     if (link.color === "green") {
-                        movements += "<li>"
+                        events += "<li>"
                             + link.value.toLocaleString("en-US")
                             + " troops moved onwards to "
                             + link.target.name
                             + "</li>";
                     } else if (link.color === "red" && link.target.name !== "Dead") {
                         if (link.target.name !== "Survived") {
-                            movements += "<li>"
+                            events += "<li>"
                                 + link.value.toLocaleString("en-US")
                                 + " troops retreated to "
                                 + link.target.name
                                 + "</li>";
                         } else {
-                            movements += "<li>"
+                            events += "<li>"
                                 + link.value.toLocaleString("en-US")
-                                + " troops survived"
+                                + " troops returned"
                                 + "</li>";
                         }
                     } else {
-                        movements += "<li>"
+                        events += "<li>"
                             + link.value.toLocaleString("en-US")
                             + " troops died"
                             + "</li>";
                     }
                 })
-                movements += "</ul>";
-                tooltip.html("Node: " + d.name + "<br/>"
-                    + "Movements: <br/>" + movements);
+                events += "</ul>";
+                tooltip.html("Location: " + d.name + "<br/>"
+                    + "Events: <br/>" + events);
             })
             .on("mouseout", function (d) {
                 svg.selectAll("rect").attr("opacity", 1);
-                tooltip.html("Node: <br/>"
-                    + "Movements: ")
+                tooltip.html("Location: <br/>"
+                    + "Events: ")
             });
 
         svg.append("g")
             .attr("font-family", "sans-serif")
-            .attr("font-size", 10)
+            .attr("font-size", ".8em")
             .selectAll("text")
             .data(graph.nodes)
             .join("text")
             .attr("x", d => d.x0 < width / 2 ? d.x1 : d.x0)
-            .attr("y", d => d.y0 - 5)
+            .attr("y", d => d.y0 - 7)
             .attr("dy", "0.35em")
             .attr("text-anchor", "middle")
             .text(d => d.name);
