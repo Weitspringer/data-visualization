@@ -1,0 +1,185 @@
+<!DOCTYPE html>
+<html lang="eng">
+
+<head>
+    <meta charset="UTF-8" />
+    <title>Napoleon's March</title>
+    <script src="https://d3js.org/d3.v5.min.js"></script>
+    <script src="https://unpkg.com/d3-sankey@0"></script>
+    <style>
+        body {
+            font-family: Segoe, Segoe UI, Candara, Calibri, Arial, sans-serif;
+            font-size: 1em;
+            position: relative;
+        }
+
+        .title {
+            font-size: 20pt;
+            font-weight: 300;
+        }
+
+        .tooltip {
+            position: absolute;
+            z-index: 10;
+            padding: 1em;
+            color: white;
+            background: black;
+            border-radius: 7px;
+        }
+    </style>
+</head>
+
+<body>
+    <div id="chart"></div>
+</body>
+<script>
+    // Dimensions with margins
+    let margin = { top: 60, right: 10, bottom: 0, left: 10 },
+        width = 1400 - margin.left - margin.right,
+        height = 450 - margin.top - margin.bottom;
+
+    // Define variables and constants for
+    let graph = { nodes: [], links: [] };
+    const marchingColor = d => d === -1 ? "red" : d === 1 ? "green" : "black";
+
+    // Read data and process it afterwards
+    d3.csv("/data/NapoleonMarch.csv", function (row) {
+        //--- Additional calculations ---//
+        if (+row.survivors !== 0) {
+            graph.nodes.push({ name: row.from });
+            graph.nodes.push({ name: row.to });
+            graph.links.push({
+                source: row.from,
+                target: row.to,
+                value: +row.survivors,
+                color: marchingColor(+row.direction)
+            })
+            return row;
+        }
+    }).then(function (data) {
+        //--- Preprocessing ---//
+        graph.nodes = d3.keys(d3.nest().key(d => d.name).object(graph.nodes)).map(name => ({ name: name })); // unique nodes
+
+        // Calculate sankey
+        const sankey = d3
+            .sankey()
+            .nodeId(d => d.name)
+            .nodeAlign(d3.sankeyJustify)
+            .nodeWidth(7)
+            .nodePadding(15)
+            .extent([[margin.top, margin.left], [width - margin.left - margin.right, height - margin.top - margin.bottom]])
+            .iterations(2);
+
+        sankey(graph);
+
+        //--- Drawing ---//
+        // Insert tooltip
+        var tooltip = d3.select("body")
+            .append("div")
+            .attr("class", "tooltip")
+        tooltip.html("Node: <br/>"
+            + "Movements: ")
+
+        // Insert svg and group
+        var svg = d3
+            .select("#chart")
+            .append("svg")
+            .attr("width", width + margin.left + margin.right)
+            .attr("height", height + margin.top + margin.bottom)
+            .append("g")
+            .attr("transform", "translate(" + margin.left + "," + margin.top + ")");
+
+        // Print the title
+        svg
+            .append("text")
+            .attr("class", "title")
+            .attr("x", width / 2)
+            .attr("y", 0)
+            .style("text-anchor", "middle")
+            .text("Napolon's March on Moscow");
+
+        // Add visualization
+        const node = svg.append("g")
+            .attr("stroke", "black")
+            .attr("stroke-width", 2)
+            .attr("stroke-opacity", .5)
+            .selectAll("rect")
+            .data(graph.nodes)
+            .join("rect")
+            .attr("x", d => d.x0)
+            .attr("y", d => d.y0)
+            .attr("height", d => d.y1 - d.y0)
+            .attr("width", sankey.nodeWidth())
+            .on("mouseover", function (d) {
+                var movements = "<ul>";
+                nextNodes = d.sourceLinks;
+                svg
+                    .selectAll("rect")
+                    .attr("opacity", function (node) {
+                        return node.name === d.name || nextNodes.map(link => link.target.name).includes(node.name) ? 1 : .1;
+                    });
+                nextNodes.forEach(link => {
+                    if (link.color === "green") {
+                        movements += "<li>"
+                            + link.value.toLocaleString("en-US")
+                            + " troops moved onwards to "
+                            + link.target.name
+                            + "</li>";
+                    } else if (link.color === "red" && link.target.name !== "Dead") {
+                        if (link.target.name !== "Survived") {
+                            movements += "<li>"
+                                + link.value.toLocaleString("en-US")
+                                + " troops retreated to "
+                                + link.target.name
+                                + "</li>";
+                        } else {
+                            movements += "<li>"
+                                + link.value.toLocaleString("en-US")
+                                + " troops survived"
+                                + "</li>";
+                        }
+                    } else {
+                        movements += "<li>"
+                            + link.value.toLocaleString("en-US")
+                            + " troops died"
+                            + "</li>";
+                    }
+                })
+                movements += "</ul>";
+                tooltip.html("Node: " + d.name + "<br/>"
+                    + "Movements: <br/>" + movements);
+            })
+            .on("mouseout", function (d) {
+                svg.selectAll("rect").attr("opacity", 1);
+                tooltip.html("Node: <br/>"
+                    + "Movements: ")
+            });
+
+        svg.append("g")
+            .attr("font-family", "sans-serif")
+            .attr("font-size", 10)
+            .selectAll("text")
+            .data(graph.nodes)
+            .join("text")
+            .attr("x", d => d.x0 < width / 2 ? d.x1 : d.x0)
+            .attr("y", d => d.y0 - 5)
+            .attr("dy", "0.35em")
+            .attr("text-anchor", "middle")
+            .text(d => d.name);
+
+        const link = svg.append("g")
+            .attr("fill", "none")
+            .attr("stroke-opacity", 0.2)
+            .selectAll("path")
+            .data(graph.links)
+            .join("path")
+            .attr("d", d3.sankeyLinkHorizontal())
+            .attr("stroke-width", function (d) { return d.width; })
+            .attr("stroke", d => d.color)
+
+        // No pointer events for links
+        link.style("pointer-events", "none");
+    });
+</script>
+
+</html>
