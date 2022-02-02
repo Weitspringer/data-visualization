@@ -7,15 +7,18 @@
     <script src="https://d3js.org/d3.v5.min.js"></script>
     <style>
         body {
-            font: 10px sans-serif;
-            font-family: "Ubuntu", sans-serif;
+            font-family: Segoe, Segoe UI, Candara, Calibri, Arial, sans-serif;
+            font-size: 10pt;
             position: relative;
         }
 
         .title {
-            font-family: "Ubuntu", sans-serif;
             font-size: 20pt;
             font-weight: 300;
+        }
+
+        .legend-text {
+            font-size: 1.5em;
         }
 
         .tooltip {
@@ -30,7 +33,11 @@
 
         .tooltip-name {
             text-align: center;
-            font-size: 2em;
+            font-size: 1.5em;
+        }
+
+        .tooltip-click-tip {
+            text-decoration: underline;
         }
     </style>
 </head>
@@ -42,29 +49,30 @@
     // Dimensions with margins
     let margin = { top: 60, right: 30, bottom: 0, left: 35 },
         width = 1200 - margin.left - margin.right,
-        height = 800 - margin.top - margin.bottom;
+        height = 900 - margin.top - margin.bottom;
 
     // Define design constants
-    const selectTip = "Click to select node (hold to drag)";
-    const unselectTip = "Click to unselect (hold to drag)";
+    const selectTip = "Click to select node, hold to drag";
+    const unselectTip = "Click to unselect, hold to drag";
     const defaultNodeOpacity = .9;
     const fadedNodeOpacity = .1;
     const defaultNodeColor = "#a393bf";
+    const selectedNodeStrokeColor = "red";
     const linkColor = "darkgrey";
     const defaultLinkOpacity = .8;
     const fadedLinkOpacity = .1;
 
     // Define data structure for houses
     const houses = [
-        {name: "House Targaryen", color: "#020202", keyChains: [["Targaryen"], ["Jon", "Snow"]]},
-        {name: "House Lannister", color: "#934549", keyChains: [["Lannister"]]},
-        {name: "House Martell", color: "#f59b00", keyChains: [["Martell"]]},
-        {name: "House Tyrell", color: "#8fc18c", keyChains: [["Tyrell"]]},
-        {name: "House Stark", color: "#4b4955", keyChains: [["Stark"]]},
-        {name: "House Tully", color: "#2a6694", keyChains: [["Tully"]]},
-        {name: "House Arryn", color: "#761c68", keyChains: [["Arryn"]]},
-        {name: "House Baratheon", color: "#eac413", keyChains: [["Baratheon"]]},
-        {name: "No house", color: defaultNodeColor, keyChains: []},
+        { name: "Targaryen", color: "#020202", keyChains: [["Targaryen"], ["Jon", "Snow"]] },
+        { name: "Lannister", color: "#934549", keyChains: [["Lannister"]] },
+        { name: "Martell", color: "#f59b00", keyChains: [["Martell"]] },
+        { name: "Tyrell", color: "#8fc18c", keyChains: [["Tyrell"]] },
+        { name: "Stark", color: "#4b4955", keyChains: [["Stark"]] },
+        { name: "Tully", color: "#2a6694", keyChains: [["Tully"]] },
+        { name: "Arryn", color: "#761c68", keyChains: [["Arryn"]] },
+        { name: "Baratheon", color: "#eac413", keyChains: [["Baratheon"]] },
+        { name: "Other", color: defaultNodeColor, keyChains: [] },
     ]
 
     // Array for node data
@@ -92,9 +100,14 @@
             return {
                 id: d,
                 order: links.reduce((a, v) => v.source === d || v.target === d ? a + 1 : a, 0),
-                interacted: links.filter(l => l.source === d).map((l) => l.target).concat(links.filter(l => l.target === d).map((l) => l.source))
+                interacted: links.filter(l => l.source === d).map(function (l) {
+                    return { id: l.target, weight: l.weight }
+                }).concat(links.filter(l => l.target === d).map(function (l) {
+                    return { id: l.source, weight: l.weight }
+                })).sort(function (a, b) { return a.weight < b.weight})
             }
         });
+        console.log(nodes)
         const weightExtent = d3.extent(links.map((d) => parseInt(d.weight)));
         const orderExtent = d3.extent(nodes.map((d) => d.order));
         const scaleLineWidth = d3.scaleLinear().domain(weightExtent).range([.4, 10]);
@@ -108,6 +121,7 @@
 
         var nodeName = tooltip.append("div").attr("class", "tooltip-name");
         var clickTip = tooltip.append("div").attr("class", "tooltip-click-tip");
+        var nodeInfo = tooltip.append("div");
 
         // Insert svg and group
         var svg = d3
@@ -148,27 +162,32 @@
             .append("circle")
             .style("fill", d => colorHouses(d.id))
             .style("opacity", defaultNodeOpacity)
+            .style("stroke-width", "3")
             .attr("r", d => Math.sqrt(scaleNodeArea(d.order) / Math.PI))
             .on("mouseover", function (d) {
                 nodeName.text(d.id);
                 tooltip.style("visibility", "visible");
                 if (active === d.id) {
                     clickTip.text(unselectTip);
+                    nodeInfo.html("<h4>Most interactions with:</h4>" + d.interacted.map(i => i.id).slice(0, 10).join("<br/>"));
                 } else {
                     clickTip.text(selectTip);
+                    nodeInfo.html("");
                 }
             })
             .on("click", function (d) {
                 if (active !== d.id) {
                     active = d.id;
                     clickTip.text(unselectTip);
+                    nodeInfo.html("<h4>Most interactions with:</h4>" + d.interacted.map(i => i.id).slice(0, 10).join("<br/>"));
                     container.selectAll("circle")
-                        .style("opacity", n => d.interacted.includes(n.id) || n.id === d.id ? defaultNodeOpacity : fadedNodeOpacity)
-                        .style("stroke", n => n.id === d.id ? "red" : undefined)
+                        .style("opacity", n => d.interacted.map(i => i.id).includes(n.id) || n.id === d.id ? defaultNodeOpacity : fadedNodeOpacity)
+                        .style("stroke", n => n.id === d.id ? selectedNodeStrokeColor : undefined)
                     container.selectAll("line")
                         .style("opacity", l => l.source.id === d.id || l.target.id === d.id ? defaultLinkOpacity : fadedLinkOpacity)
                 } else {
                     active = null;
+                    nodeInfo.html("")
                     clickTip.text(selectTip);
                     container.selectAll("circle")
                         .style("stroke", undefined)
@@ -197,17 +216,17 @@
                 .links(links)
                 .distance(5)
             )
-            .force("charge", d3.forceManyBody().strength(-70))
+            .force("charge", d3.forceManyBody().strength(-65))
             .force("center", d3.forceCenter(width / 2, height / 2))
             .force("y", d3.forceY(height / 2).strength(.3))
-            .force("x", d3.forceX(width / 2).strength(.2))
+            .force("x", d3.forceX(width / 2).strength(.18))
             .on("tick", ticked);
 
         const legend = d3
             .select("svg")
             .append("g")
             .attr("class", "legend")
-            .attr("transform", `translate(${[85, 50]})`);
+            .attr("transform", `translate(${[50, 50]})`);
 
         legend
             .selectAll("g.item")
@@ -217,15 +236,17 @@
             .each(function (house, i) {
                 d3.select(this)
                     .append("rect")
-                    .attr("y", i * 10)
-                    .attr("height", 8)
-                    .attr("width", 20)
+                    .attr("class", "legend-glyph")
+                    .attr("y", i * 22)
+                    .attr("height", 20)
+                    .attr("width", 50)
                     .style("fill", house.color);
 
                 d3.select(this)
                     .append("text")
-                    .attr("y", i * 10 + 7)
-                    .attr("x", 24)
+                    .attr("class", "legend-text")
+                    .attr("y", i * 22 + 17)
+                    .attr("x", 52)
                     .text(house.name);
             });
 
